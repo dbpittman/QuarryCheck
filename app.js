@@ -103,7 +103,6 @@ const SOURCES = [
   { id:'intakes', accuracy:10,        url:`${AGOL}/Intakes_and_Wellheads/FeatureServer/0/query`, queryDist:1000, nameFields:['NAME','TYPE','OBJECTID'], authority:'GNL ArcGIS Online (WRMD)', note:'Intakes and wellheads' },
   { id:'water_rights', accuracy:10,   url:`${AGOL}/Water_Rights/FeatureServer/0/query`, queryDist:1000, nameFields:['NAME','HOLDER','OBJECTID'], authority:'GNL ArcGIS Online (WRMD)', note:'Water rights' },
   { id:'nat_drain', accuracy:10,      url:`${AGOL}/Natural_Drainage_Outside_Protected_Area/FeatureServer/0/query`, queryDist:100, nameFields:['NAME','OBJECTID'], authority:'GNL ArcGIS Online (WRMD)', note:'Natural drainage outside PWSA' },
-  { id:'flood', accuracy:10,          url:`${AGOL}/Flood_Risk_Extents/FeatureServer/0/query`, queryDist:100, nameFields:['COMMUNITY','NAME','OBJECTID'], authority:'GNL ArcGIS Online (WRMD)', note:'Flood risk extents' },
 
   // Protected areas (AGOL)
   { id:'prov_protected', accuracy:10, url:`${AGOL}/Provincial_Protected_Areas/FeatureServer/0/query`, queryDist:100, nameFields:['NAME','PROTECTED_AREA_NAME','OBJECTID'], authority:'GNL ArcGIS Online', note:'Provincial protected areas' },
@@ -129,6 +128,8 @@ const BUNDLED = [
     authority:'Energy and Mines (formerly IET) quarries site KMZ, snapshot 2026-08-13', note:'No Permits Available areas, s.5 Quarry Materials Regulations (5 designated areas). Listing is province-described work-in-progress; absence of a polygon is not proof none exists.' },
   { id:'qmels', accuracy:10, nameFields:['name'], path:'data/qmels.geojson', queryDist:500, snapshot:'2024-10-25',
     authority:'Energy and Mines (formerly IET) quarries site KMZ, dated 2024-10-25 (STALE: many licences since expired or issued)', note:'Quarry Materials Exploration Licences' },
+  { id:'flood', accuracy:10, nameFields:['name'], path:'data/flood_extents.geojson', queryDist:1000, snapshot:'2026-08-13',
+    authority:'Water Resources flood mapping (AGOL Flood_Risk_Extents), envelope snapshot 2026-08-13', note:'Flood risk study area envelopes (357). Envelopes are conservative: a hit means a study area exists in this vicinity, not that the boundary lies in a mapped flood zone. The live layer answers spatial queries in 18-30 s and was retired from screen-time use; authoritative extents remain with Water Resources.' },
   { id:'q_snapshot', accuracy:5, nameFields:['name'], path:'data/quarry_tenure_snapshot.geojson', queryDist:500, snapshot:'2026-08-13',
     authority:'Energy and Mines (formerly IET) quarries site KMZ, snapshot 2026-08-13; datum-verified against permit 151600 (104.7 m to Route 470 vs ~100 m ground truth, area 2.00 ha exact)', note:'Quarry permit/lease boundary polygons (1,340)' },
 ];
@@ -800,7 +801,7 @@ function runReferralForecast(boundary, results) {
     'Designated No Permits Available area on or near the boundary — a permit cannot issue inside one', null,
     {tier:'REG', cite:'Quarry Materials Regulations, s.5'});
   add('Water Resources Management Division', ['lu_pws','pwsa','intakes','water_rights','nat_drain','flood'], 1000,
-    'Public water supply areas, intakes/wellheads, water rights, natural drainage, or flood extents nearby');
+    'Public water supply areas, intakes/wellheads, water rights, natural drainage, or flood risk study areas nearby (flood screened as study-area envelopes: a hit means a study exists in the vicinity; consult the authoritative extents)');
   add('Parks and protected areas', ['lu_protected','lu_cpcad','prov_protected','mmnpr'], 100,
     'Protected or conserved area on or near the boundary');
   add('Nunatsiavut Government (LIL/LISA)', ['lu_lil','lu_lisa'], 100,

@@ -394,6 +394,20 @@ async function main() {
     ok(/the form states/.test(ov.detail), 'consequence language is attributed to the form');
   }
 
+  console.log('\n[16] flood: envelope snapshot replaces the slow live layer');
+  {
+    ok(!app.SOURCES.some(s => s.id === 'flood') && app.BUNDLED.some(s => s.id === 'flood'),
+       'flood is bundled, not live');
+    const fl = await app.loadBundled(app.BUNDLED.find(s => s.id === 'flood'), boundary, fetchFn);
+    ok(fl.ok, 'flood envelope snapshot loads');
+    const stephenville = global.turf.polygon([[[-58.58,48.54],[-58.57,48.54],[-58.57,48.55],[-58.58,48.55],[-58.58,48.54]]]);
+    const flS = await app.loadBundled(app.BUNDLED.find(s => s.id === 'flood'), stephenville, fetchFn);
+    const rW = app.runReferralForecast(stephenville, { flood: flS });
+    const wrm = rW.items.find(i => /Water Resources/.test(i.agency));
+    ok(flS.features.length >= 1 && wrm && /envelope/.test(wrm.why),
+       `a known flood-study town trips the referral with envelope wording (${flS.features.length} envelope(s) in range)`);
+  }
+
   console.log(`\n${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
 }
