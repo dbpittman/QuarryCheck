@@ -286,7 +286,7 @@ function showMap(boundary, access){
           { id:'landuse', type:'raster', source:'landuse', layout:{ visibility:'none' } } ] },
       bounds: (window._lastFitBbox = bbox), fitBoundsOptions:{ padding:30 }
     });
-    map.on('load', () => addLayers(boundary, access));
+    map.on('load', () => { addLayers(boundary, access); schedulePrintCapture(); });
     // basemap cycle: Atlas Topo -> Atlas Imagery -> OSM -> NL provincial stack
     const BASEMAPS = [
       { label:'NL Imagery', on:['nlimg'] },
@@ -355,6 +355,7 @@ function showMap(boundary, access){
     addLayers(boundary, access);
     window._lastFitBbox = bbox;
     map.fitBounds(bbox, { padding:30 });
+    schedulePrintCapture();
   }
 }
 function addLayers(boundary, access){
@@ -544,6 +545,15 @@ function drawHits(out){
     + '<br>' + dash('#333') + '1 km radius';
   lg.style.display='block';
 }
+function schedulePrintCapture(){
+  if (!map) return;
+  map.once('idle', async () => {
+    const url = await grabCanvas();
+    setMapPrint(url);
+    const img = document.querySelector('#mapprint img');
+    if (img && img.decode) { try { await img.decode(); } catch(e){} }
+  });
+}
 function grabCanvas(){
   /* Copy the WebGL canvas synchronously inside a render callback: reliable
      regardless of preserveDrawingBuffer, and detectably blank if not. */
@@ -576,6 +586,12 @@ async function printReport(){
     setMapPrint(await grabCanvas());
     map.jumpTo(cam);
   } else if (map) setMapPrint(await grabCanvas());
+  /* the print snapshot races image decode: force-decode before opening the dialog */
+  const img = document.querySelector('#mapprint img');
+  if (img) {
+    if (img.decode) { try { await img.decode(); } catch(e){} }
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+  }
   window.print();
 }
 window.addEventListener('beforeprint', ()=>{
