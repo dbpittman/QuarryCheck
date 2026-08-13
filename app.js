@@ -574,6 +574,22 @@ function runSectionG(boundary, results) {
     }
   }
 
+  { // Existing quarry tenure overlap — application-fatal conflict unless it is the applicant's own tenure
+    const ids = ['q_permits','q_leases','q_sub','q_snapshot'];
+    const onSite = collectWithin(boundary, results, ids, 0);
+    const seen = new Set();
+    const named = onSite.filter(h => { const k = h.name + '|' + h.source; if (seen.has(k)) return false; seen.add(k); return true; });
+    let v = 'PASS';
+    if (named.length) v = 'ENCROACHES';
+    else if (failed(ids)) v = 'ADVISORY';
+    checks.push({ id:'TEN', label:'Existing quarry tenure overlap', setback:0,
+      verdict: v, nearest: named[0] || nearest(boundary, results, ids), sources: sourceStatus(results, ids),
+      notes: [
+        named.length ? `WARNING: the proposed boundary OVERLAPS a mapped existing (or recently mapped) quarry location: ${named.slice(0,4).map(h=>`${h.name} (${h.source})`).join('; ')}${named.length>4?'; …':''}. An application over another holder's active tenure will conflict. If this is the applicant's own tenure (renewal or expansion), state that in the application.` : null,
+        'Live tenure positions are datum-corrected; the boundary-polygon snapshot is dated. Confirm current status with the Quarries Section before relying on either.',
+      ].filter(Boolean) });
+  }
+
   return checks;
 }
 
@@ -734,9 +750,16 @@ function overallVerdict(gChecks) {
     text:'Screening could not be completed — sources unreachable.',
     detail:'Every check\'s data sources failed to respond this run. No verdict here means anything; re-run when services are available.' };
   const enc = gChecks.filter(c => c.verdict === 'ENCROACHES');
-  if (enc.length) return { level:'FAIL',
-    text:'This boundary would not be accepted as submitted.',
-    detail:`Section G encroachment: ${enc.map(c=>c.id).join(', ')}. The form states encroaching boundaries "will not be accepted"` };
+  if (enc.length) {
+    const gIds = enc.filter(c => /^G/.test(c.id)).map(c => c.id);
+    const parts = [];
+    if (gIds.length) parts.push(`Section G encroachment: ${gIds.join(', ')} — the form states encroaching boundaries "will not be accepted"`);
+    if (enc.some(c => c.id === 'TEN')) parts.push('the boundary overlaps a mapped existing (or recently mapped) quarry location — competing-tenure conflict unless it is the applicant\'s own');
+    if (enc.some(c => c.id === 'NPA')) parts.push('the boundary intersects a No Permits Available area (s.5)');
+    return { level:'FAIL',
+      text:'This boundary would not be accepted as submitted.',
+      detail: parts.join('. ') + '.' };
+  }
   const adv = gChecks.filter(c => c.verdict === 'ADVISORY');
   return { level: adv.length ? 'PASS_WITH_ADVISORIES' : 'PASS',
     text:'No Section G conflict found in the published data.',

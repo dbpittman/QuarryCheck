@@ -97,8 +97,12 @@ footer{margin-top:48px;border-top:2px solid var(--ink);padding-top:10px;font-siz
   .rulebar{font-size:.66rem}
   #map{height:420px}
 }
+#mapprint{display:none}
 @media print{
-  #map{height:400px}
+  #map{display:none!important}
+  #mapprint{display:block;text-align:center;break-inside:avoid;page-break-inside:avoid}
+  #mapprint img{display:block;margin:0 auto;max-width:100%;max-height:520px;border:1px solid #bbb}
+  #mapprint .cap{font-size:.75rem;color:#555;margin-top:4px}
   details.srcd summary{display:none}
   details.srcd .src{display:block}
   .copybtn,#maplegend{display:none!important}
@@ -109,7 +113,6 @@ footer{margin-top:48px;border-top:2px solid var(--ink);padding-top:10px;font-siz
   #drop,#printbtn,#progress{display:none!important}
   .sheet{border:0;max-width:none;padding:0}
   .sheet::before,.sheet::after{display:none}
-  #map{height:300px}
   body{font-size:12px}
   a{color:var(--ink);text-decoration:none}
 }
@@ -139,9 +142,10 @@ footer{margin-top:48px;border-top:2px solid var(--ink);padding-top:10px;font-siz
 <div id="progress"></div>
 <div id="mapbar"></div>
 <div id="map"><div id="maplegend"></div></div>
+<div id="mapprint"></div>
 <div id="stamp" class="stamp"><div class="lvl"></div><div class="dtl"></div></div>
 <div id="results"></div>
-<button id="printbtn" onclick="window.print()">Print this report</button>
+<button id="printbtn" onclick="printReport()">Print this report</button>
 
 <footer>
   <p>Every result above is stamped with its source and query time. Sources are the Government of NL's own published services
@@ -237,6 +241,7 @@ function showMap(boundary, access){
     };
     map = new maplibregl.Map({
       container:'map',
+      preserveDrawingBuffer:true,
       transformRequest: (url, resourceType) => {
         const s = shiftTopoBbox(url);
         return s ? { url: s } : { url };
@@ -272,7 +277,7 @@ function showMap(boundary, access){
           { id:'nltopo', type:'raster', source:'nltopo', layout:{ visibility:'none' } },
           { id:'nlroads', type:'raster', source:'nlroads', layout:{ visibility:'none' } },
           { id:'landuse', type:'raster', source:'landuse', layout:{ visibility:'none' } } ] },
-      bounds: bbox, fitBoundsOptions:{ padding:30 }
+      bounds: (window._lastFitBbox = bbox), fitBoundsOptions:{ padding:30 }
     });
     map.on('load', () => addLayers(boundary, access));
     // basemap cycle: Atlas Topo -> Atlas Imagery -> OSM -> NL provincial stack
@@ -341,6 +346,7 @@ function showMap(boundary, access){
     document.getElementById('mapbar').appendChild(nm);
   } else {
     addLayers(boundary, access);
+    window._lastFitBbox = bbox;
     map.fitBounds(bbox, { padding:30 });
   }
 }
@@ -531,7 +537,24 @@ function drawHits(out){
     + '<br>' + dash('#333') + '1 km radius';
   lg.style.display='block';
 }
-window.addEventListener('beforeprint', ()=>{ for (const d of document.querySelectorAll('details.srcd')) { d.dataset.was=d.open?'1':''; d.open=true; } });
+function captureMapToPrint(){
+  try {
+    if (!map) return;
+    const url = map.getCanvas().toDataURL('image/png');
+    $('#mapprint').innerHTML = `<img src="${url}" alt="site map"><div class="cap">Map as screened: boundary (blue), measured setback ties, and nearby features. Rings and legend as configured at print time.</div>`;
+  } catch(e) { $('#mapprint').innerHTML = '<div class="cap">Map image could not be captured for print; see the interactive report.</div>'; }
+}
+async function printReport(){
+  if (map && window._lastFitBbox) {
+    const cam = { center: map.getCenter(), zoom: map.getZoom() };
+    map.fitBounds(window._lastFitBbox, { padding: 40, animate: false });
+    await new Promise(res => map.once('idle', res));
+    captureMapToPrint();
+    map.jumpTo(cam);
+  } else captureMapToPrint();
+  window.print();
+}
+window.addEventListener('beforeprint', ()=>{ if (!$('#mapprint').innerHTML) captureMapToPrint(); for (const d of document.querySelectorAll('details.srcd')) { d.dataset.was=d.open?'1':''; d.open=true; } });
 window.addEventListener('afterprint', ()=>{ for (const d of document.querySelectorAll('details.srcd')) d.open=!!d.dataset.was; });
 function nearestPointPair(a, b){
   // closest points between two features, metres; returns {pa, pb, dist}

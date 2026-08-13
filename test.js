@@ -168,6 +168,26 @@ async function main() {
     ok(q.ok && q.snapshotAgeDays > 180 && q.stale === true, `qmels correctly flagged stale (${q.snapshotAgeDays} days)`);
   }
 
+  console.log('\n[10] tenure overlap flag (TEN)');
+  {
+    // The anchor boundary IS an existing permit parcel: TEN must fire on it.
+    const snapRes = await app.loadBundled(app.BUNDLED.find(s => s.id === 'q_snapshot'), boundary, fetchFn);
+    const g = app.runSectionG(boundary, { q_snapshot: snapRes });
+    const ten = g.find(c => c.id === 'TEN');
+    ok(!!ten, 'TEN check present');
+    ok(ten.verdict === 'ENCROACHES', `overlap with existing permit flagged (${ten.verdict})`);
+    ok(/OVERLAPS a mapped existing/.test((ten.notes||[]).join(' ')), 'warning names the overlap');
+    const overall = app.overallVerdict(g);
+    ok(overall.level === 'FAIL' && /overlaps a mapped existing/.test(overall.detail),
+       'stamp carries the tenure-overlap warning');
+    // and a clean site must not trigger it
+    const clean = global.turf.polygon([[[-56.0,48.5],[-55.999,48.5],[-55.999,48.501],[-56.0,48.501],[-56.0,48.5]]]);
+    const snapClean = await app.loadBundled(app.BUNDLED.find(s => s.id === 'q_snapshot'), clean, fetchFn);
+    const g2 = app.runSectionG(clean, { q_snapshot: snapClean });
+    const ten2 = g2.find(c => c.id === 'TEN');
+    ok(ten2.verdict !== 'ENCROACHES', `clean site does not trip TEN (${ten2.verdict})`);
+  }
+
   console.log(`\n${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
 }

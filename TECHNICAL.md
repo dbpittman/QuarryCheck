@@ -167,6 +167,24 @@ definitive (the original BOG-only query silently missed Wet Bog and Treed
 Bog) and excludes the barrens, ending the earlier SB/RB advisory. The
 inventory can miss small marshes and fens; reports say so.
 
+## Tenure-overlap flag (TEN)
+
+A boundary intersecting mapped existing quarry tenure (live permit/lease/
+subordinate layers, datum-corrected, plus the boundary-polygon snapshot) is
+flagged as an application-fatal conflict in its own check and in the overall
+verdict stamp, with holders named. The warning states the one legitimate
+exception — the applicant's own tenure (renewal/expansion) — and directs
+that it be declared in the application.
+
+## Printed map
+
+The live WebGL map does not reflow for print media, which clipped the map
+and could lose the boundary. Printing now refits the view to the screened
+boundary, waits for the render to settle, captures the canvas to a static
+image (map initialized with preserveDrawingBuffer), and prints that image
+centered with a caption; the live map is hidden in print. Browser-menu
+printing captures the current view as a fallback.
+
 ## Outage behavior
 
 A failed source can never produce a clean answer. Section G verdicts degrade
