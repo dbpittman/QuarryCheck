@@ -12,108 +12,106 @@ const CROWN = 'https://www.gov.nl.ca/landuseatlasmaps/rest/services/LandUseDetai
    nameFields: first non-empty attribute wins for display. */
 const SOURCES = [
   // G1 private property (Crown Lands server; authoritative for titles)
-  { id:'crown_titles',   url:`${CROWN}/3/query`,  queryDist:1000, nameFields:['APPLICANT','TITLENO','TITLETYPE','OBJECTID'], authority:'Crown Lands (Land Use Atlas)', note:'Issued Crown titles' },
-  { id:'crown_apps',     url:`${CROWN}/2/query`,  queryDist:1000, nameFields:['APPLICANT','TITLENO','TITLETYPE','OBJECTID'], authority:'Crown Lands (Land Use Atlas)', note:'Applications for Crown title' },
+  { id:'crown_titles', accuracy:10,   url:`${CROWN}/3/query`,  queryDist:1000, nameFields:['APPLICANT','TITLENO','TITLETYPE','OBJECTID'], authority:'Crown Lands (Land Use Atlas)', note:'Issued Crown titles' },
+  { id:'crown_apps', accuracy:10,     url:`${CROWN}/2/query`,  queryDist:1000, nameFields:['APPLICANT','TITLENO','TITLETYPE','OBJECTID'], authority:'Crown Lands (Land Use Atlas)', note:'Applications for Crown title' },
 
   // G2 trails / resource access (mapped only; cabin trails are not mapped anywhere)
-  { id:'res_roads_dnr',  url:`${DNR}/Map_Layers/MapServer/14/query`, queryDist:1000, nameFields:['ROAD_NAME','ROAD_TYPE','OBJECTID'], authority:'dnrmaps (Geoscience Atlas)', note:'Resource access roads' },
-  { id:'res_roads_lb',   url:`${AGOL}/FFA_ResourceRoads_LB/FeatureServer/0/query`, queryDist:1000, nameFields:['ROAD_NAME','NAME','OBJECTID'], authority:'GNL ArcGIS Online (FFA)', note:'Labrador resource roads' },
-  { id:'res_roads_nf',   url:`${AGOL}/FFA_ResourceRoads_NF/FeatureServer/2/query`, queryDist:1000, nameFields:['ROAD_NAME','NAME','ROADNAME','OBJECTID'], authority:'GNL ArcGIS Online (FFA)', note:'Island resource roads (FFA)' },
+  { id:'res_roads_dnr', accuracy:15,  url:`${DNR}/Map_Layers/MapServer/14/query`, queryDist:1000, nameFields:['ROAD_NAME','ROAD_TYPE','OBJECTID'], authority:'dnrmaps (Geoscience Atlas)', note:'Resource access roads' },
+  { id:'res_roads_lb', accuracy:15,   url:`${AGOL}/FFA_ResourceRoads_LB/FeatureServer/0/query`, queryDist:1000, nameFields:['ROAD_NAME','NAME','OBJECTID'], authority:'GNL ArcGIS Online (FFA)', note:'Labrador resource roads' },
+  { id:'res_roads_nf', accuracy:15,   url:`${AGOL}/FFA_ResourceRoads_NF/FeatureServer/2/query`, queryDist:1000, nameFields:['ROAD_NAME','NAME','ROADNAME','OBJECTID'], authority:'GNL ArcGIS Online (FFA)', note:'Island resource roads (FFA)' },
 
   // G3 roads: Land Use Atlas road layers are PRIMARY (current + owner-verified against imagery
   // at two sites, 2026-08-12). dnrmaps Detailed Road Network demoted: 2008-vintage NRN import,
   // found offset/stale at both test sites; retained for E3 access context only.
-  { id:'lu_roads_p',     url:`${CROWN}/39/query`, queryDist:1000, nameFields:['ROADNAME','STREETNAME','RTENAME1EN','RTNUMBER1','NAME','ROADCLASS','OBJECTID'], authority:'Crown Lands (Land Use Atlas)', note:'Primary roads' },
-  { id:'lu_roads_s',     url:`${CROWN}/40/query`, queryDist:1000, nameFields:['ROADNAME','STREETNAME','RTENAME1EN','RTNUMBER1','NAME','ROADCLASS','OBJECTID'], authority:'Crown Lands (Land Use Atlas)', note:'Secondary roads' },
+  { id:'lu_roads_p', accuracy:5,     url:`${CROWN}/39/query`, queryDist:1000, nameFields:['ROADNAME','STREETNAME','RTENAME1EN','RTNUMBER1','NAME','ROADCLASS','OBJECTID'], authority:'Crown Lands (Land Use Atlas)', note:'Primary roads' },
+  { id:'lu_roads_s', accuracy:5,     url:`${CROWN}/40/query`, queryDist:1000, nameFields:['ROADNAME','STREETNAME','RTENAME1EN','RTNUMBER1','NAME','ROADCLASS','OBJECTID'], authority:'Crown Lands (Land Use Atlas)', note:'Secondary roads' },
   // G4 live layer (bundled KMZ snapshot retained as fallback)
-  { id:'lu_prz',         url:`${CROWN}/38/query`, queryDist:200, nameFields:['NAME','ROAD','ROADNAME','OBJECTID'], authority:'Crown Lands (Land Use Atlas)', note:'Protected Road Zones (live)' },
+  { id:'lu_prz', accuracy:10,         url:`${CROWN}/38/query`, queryDist:200, nameFields:['NAME','ROAD','ROADNAME','OBJECTID'], authority:'Crown Lands (Land Use Atlas)', note:'Protected Road Zones (live)' },
 
-  { id:'roads_dnr',      url:`${DNR}/Map_Layers/MapServer/13/query`, queryDist:1000, nameFields:['L_STNAME_C','RTENAME1EN','RTNUMBER1','ROADCLASS','OBJECTID'], authority:'dnrmaps (Geoscience Atlas)', note:'Detailed road network (NRN)' },
-  { id:'roads_nrn',      url:`${AGOL}/NRN_NL_7_0_ROADSEG/FeatureServer/0/query`, queryDist:1000, nameFields:['L_STNAME_C','RTENAME1EN','RTNUMBER1','ROADCLASS','OBJECTID'], authority:'GNL ArcGIS Online', note:'NRN subset (Labrador)' },
-  { id:'road_tlh',       url:`${AGOL}/TLH/FeatureServer/0/query`, queryDist:1000, nameFields:['RTENAME1EN','RTNUMBER1','OBJECTID'], authority:'GNL ArcGIS Online', note:'Trans-Labrador Highway' },
-  { id:'road_cartwright',url:`${AGOL}/CartwrightAccessRoad/FeatureServer/0/query`, queryDist:1000, nameFields:['NAME','OBJECTID'], authority:'GNL ArcGIS Online', note:'Cartwright access road' },
+  { id:'roads_dnr', accuracy:10,      url:`${DNR}/Map_Layers/MapServer/13/query`, queryDist:1000, nameFields:['L_STNAME_C','RTENAME1EN','RTNUMBER1','ROADCLASS','OBJECTID'], authority:'dnrmaps (Geoscience Atlas)', note:'Detailed road network (NRN)' },
+  { id:'roads_nrn', accuracy:10,      url:`${AGOL}/NRN_NL_7_0_ROADSEG/FeatureServer/0/query`, queryDist:1000, nameFields:['L_STNAME_C','RTENAME1EN','RTNUMBER1','ROADCLASS','OBJECTID'], authority:'GNL ArcGIS Online', note:'NRN subset (Labrador)' },
+  { id:'road_tlh', accuracy:10,       url:`${AGOL}/TLH/FeatureServer/0/query`, queryDist:1000, nameFields:['RTENAME1EN','RTNUMBER1','OBJECTID'], authority:'GNL ArcGIS Online', note:'Trans-Labrador Highway' },
+  { id:'road_cartwright', accuracy:10,url:`${AGOL}/CartwrightAccessRoad/FeatureServer/0/query`, queryDist:1000, nameFields:['NAME','OBJECTID'], authority:'GNL ArcGIS Online', note:'Cartwright access road' },
 
   // G5 water: island (FFA_LandCover) + Labrador (FFA_LandCover_LB)
-  { id:'stream_isl',     url:`${AGOL}/FFA_LandCover/FeatureServer/2/query`,  queryDist:300, nameFields:['OBJECTID'], authority:'GNL ArcGIS Online (FFA forestry inventory)', note:'Stream (island)' },
-  { id:'wline_isl',      url:`${AGOL}/FFA_LandCover/FeatureServer/4/query`,  queryDist:300, nameFields:['OBJECTID'], authority:'GNL ArcGIS Online (FFA forestry inventory)', note:'Waterbody line (island)' },
-  { id:'wbody_isl',      url:`${AGOL}/FFA_LandCover/FeatureServer/5/query`,  queryDist:300, nameFields:['OBJECTID'], authority:'GNL ArcGIS Online (FFA forestry inventory)', note:'Waterbody (island)' },
-  { id:'stream_lb',      url:`${AGOL}/FFA_LandCover_LB/FeatureServer/0/query`, queryDist:300, nameFields:['OBJECTID'], authority:'GNL ArcGIS Online (FFA forestry inventory)', note:'Stream (Labrador)' },
-  { id:'wline_lb',       url:`${AGOL}/FFA_LandCover_LB/FeatureServer/2/query`, queryDist:300, nameFields:['OBJECTID'], authority:'GNL ArcGIS Online (FFA forestry inventory)', note:'Waterbody line (Labrador)' },
-  { id:'wbody_lb',       url:`${AGOL}/FFA_LandCover_LB/FeatureServer/3/query`, queryDist:300, nameFields:['OBJECTID'], authority:'GNL ArcGIS Online (FFA forestry inventory)', note:'Waterbody (Labrador)' },
+  { id:'stream_isl', accuracy:15,     url:`${AGOL}/FFA_LandCover/FeatureServer/2/query`,  queryDist:300, nameFields:['OBJECTID'], authority:'GNL ArcGIS Online (FFA forestry inventory)', note:'Stream (island)' },
+  { id:'wline_isl', accuracy:15,      url:`${AGOL}/FFA_LandCover/FeatureServer/4/query`,  queryDist:300, nameFields:['OBJECTID'], authority:'GNL ArcGIS Online (FFA forestry inventory)', note:'Waterbody line (island)' },
+  { id:'wbody_isl', accuracy:15,      url:`${AGOL}/FFA_LandCover/FeatureServer/5/query`,  queryDist:300, nameFields:['OBJECTID'], authority:'GNL ArcGIS Online (FFA forestry inventory)', note:'Waterbody (island)' },
+  { id:'stream_lb', accuracy:15,      url:`${AGOL}/FFA_LandCover_LB/FeatureServer/0/query`, queryDist:300, nameFields:['OBJECTID'], authority:'GNL ArcGIS Online (FFA forestry inventory)', note:'Stream (Labrador)' },
+  { id:'wline_lb', accuracy:15,       url:`${AGOL}/FFA_LandCover_LB/FeatureServer/2/query`, queryDist:300, nameFields:['OBJECTID'], authority:'GNL ArcGIS Online (FFA forestry inventory)', note:'Waterbody line (Labrador)' },
+  { id:'wbody_lb', accuracy:15,       url:`${AGOL}/FFA_LandCover_LB/FeatureServer/3/query`, queryDist:300, nameFields:['OBJECTID'], authority:'GNL ArcGIS Online (FFA forestry inventory)', note:'Waterbody (Labrador)' },
 
   // G5 corroboration: 1:50k NTS topo hydro (dnrmaps)
-  { id:'topo_wline', datum:'nad27null',     url:`${DNR}/Topographic/MapServer/12/query`, queryDist:300, nameFields:['OBJECTID'], authority:'dnrmaps (1:50k NTS topo)', note:'Watercourse lines (1:50k)' },
-  { id:'topo_wpoly', datum:'nad27null',     url:`${DNR}/Topographic/MapServer/13/query`, queryDist:300, nameFields:['OBJECTID'], authority:'dnrmaps (1:50k NTS topo)', note:'Waterbody polygons (1:50k)' },
+  { id:'topo_wline', accuracy:25, datum:'nad27null',     url:`${DNR}/Topographic/MapServer/12/query`, queryDist:300, nameFields:['OBJECTID'], authority:'dnrmaps (1:50k NTS topo)', note:'Watercourse lines (1:50k)' },
+  { id:'topo_wpoly', accuracy:25, datum:'nad27null',     url:`${DNR}/Topographic/MapServer/13/query`, queryDist:300, nameFields:['OBJECTID'], authority:'dnrmaps (1:50k NTS topo)', note:'Waterbody polygons (1:50k)' },
 
   // G6 wetland (Non-Forest polygons carrying NFCODE)
-  { id:'nonforest_isl',  url:`${AGOL}/FFA_LandCover/FeatureServer/7/query`,  queryDist:200, where:"NFCODE IN ('BOG','WBOG','TBOG')", nameFields:['NFCODE'], authority:'GNL ArcGIS Online (FFA forestry inventory)', note:'Wetland classes: Bog, Wet Bog, Treed Bog (island)' },
-  { id:'nonforest_lb',   url:`${AGOL}/FFA_LandCover_LB/FeatureServer/5/query`, queryDist:200, where:"NFCODE IN ('BOG','WBOG','TBOG')", nameFields:['NFCODE'], authority:'GNL ArcGIS Online (FFA forestry inventory)', note:'Wetland classes: Bog, Wet Bog, Treed Bog (Labrador)' },
+  { id:'nonforest_isl', accuracy:15,  url:`${AGOL}/FFA_LandCover/FeatureServer/7/query`,  queryDist:200, where:"NFCODE IN ('BOG','WBOG','TBOG')", nameFields:['NFCODE'], authority:'GNL ArcGIS Online (FFA forestry inventory)', note:'Wetland classes: Bog, Wet Bog, Treed Bog (island)' },
+  { id:'nonforest_lb', accuracy:15,   url:`${AGOL}/FFA_LandCover_LB/FeatureServer/5/query`, queryDist:200, where:"NFCODE IN ('BOG','WBOG','TBOG')", nameFields:['NFCODE'], authority:'GNL ArcGIS Online (FFA forestry inventory)', note:'Wetland classes: Bog, Wet Bog, Treed Bog (Labrador)' },
 
   // E2/E6 quarry tenure (dnrmaps authoritative)
-  { id:'q_apps', datum:'nad27null',         url:`${DNR}/Mineral_Lands/MapServer/6/query`, queryDist:500, nameFields:['COMPANY','FILENUMBER','PERMIT_ID'], authority:'dnrmaps (live tenure database)', note:'Quarry applications (point locations)' },
-  { id:'q_sub', datum:'nad27null',          url:`${DNR}/Mineral_Lands/MapServer/7/query`, queryDist:500, nameFields:['COMPANY','FILENUMBER','PERMIT_ID'], authority:'dnrmaps (live tenure database)', note:'Subordinate quarry permits' },
-  { id:'q_permits', datum:'nad27null',      url:`${DNR}/Mineral_Lands/MapServer/8/query`, queryDist:500, nameFields:['COMPANY','FILENUMBER','PERMIT_ID'], authority:'dnrmaps (live tenure database)', note:'Quarry permits' },
-  { id:'q_leases', datum:'nad27null',       url:`${DNR}/Mineral_Lands/MapServer/9/query`, queryDist:500, nameFields:['COMPANY','FILENUMBER','PERMIT_ID'], authority:'dnrmaps (live tenure database)', note:'Quarry leases' },
-  { id:'q_agol_mirror',  url:`${AGOL}/Quarry_Permits_and_Leases___July_27_2026_/FeatureServer/0/query`, queryDist:500, nameFields:['COMPANY','FILENUMBER'], authority:'GNL ArcGIS Online (dated mirror)', note:'Boundary_Status cross-check only', optional:true },
-  { id:'npa_live',       url:`${AGOL}/No_Quarry_Permits_Available_VIEW/FeatureServer/2/query`, queryDist:200, nameFields:['Location','Description','OBJECTID'], authority:'GNL ArcGIS Online (Energy and Mines)', note:'No Permits Available areas, s.5 Quarry Materials Regulations (live layer)' },
-  { id:'qmel_live',      url:`${AGOL}/Quarry_Material_Exploration_License/FeatureServer/3/query`, queryDist:500, nameFields:['Licensee','Lic_Num','File_Num','Status','Material'], authority:'GNL ArcGIS Online (Energy and Mines)', note:'Quarry Material Exploration Licences (live layer)' },
-  { id:'q_proposed',     url:`${AGOL}/Proposed_Quarries_Boundaries_view/FeatureServer/0/query`, queryDist:500, nameFields:['Applicant','FILENUMBER','QNUM','ApplicationType'], authority:'GNL ArcGIS Online (Energy and Mines)', note:'Proposed quarry boundaries (pending applications)' },
-  { id:'agri_rfp',       url:`${AGOL}/AgricultureBoundaries/FeatureServer/8/query`, queryDist:200, nameFields:['AOI_NAME','PolygonID','OBJECTID'], authority:'GNL ArcGIS Online (agriculture)', note:'Agriculture development / RFP areas' },
-  { id:'tx_nalcor',      url:`${DNR}/Map_Layers/MapServer/15/query`, queryDist:200, nameFields:['TL_ID','OBJECTID'], authority:'dnrmaps (Geoscience Atlas)', note:'NL Hydro (Nalcor) transmission lines' },
-  { id:'tx_canvec',      url:`${DNR}/Map_Layers/MapServer/16/query`, queryDist:200, nameFields:['PROVIDER','TYPE','OBJECTID'], authority:'dnrmaps (Geoscience Atlas)', note:'CanVec transmission lines (federal compilation)' },
-  { id:'fp_aop_harv',    url:`${AGOL}/FFA_ForestPlanning/FeatureServer/0/query`, queryDist:200, nameFields:['AOP_ID','OBJECTID'], authority:'GNL ArcGIS Online (forestry planning)', note:'Annual operating plan: commercial harvest blocks' },
-  { id:'fp_fyop_harv',   url:`${AGOL}/FFA_ForestPlanning/FeatureServer/6/query`, queryDist:200, nameFields:['AOP_ID','OBJECTID'], authority:'GNL ArcGIS Online (forestry planning)', note:'Five-year operating plan: commercial harvest blocks' },
-  { id:'fp_aop_silv',    url:`${AGOL}/FFA_ForestPlanning/FeatureServer/5/query`, queryDist:200, nameFields:['TREAT_TYPE','AOP_ID','OBJECTID'], authority:'GNL ArcGIS Online (forestry planning)', note:'Annual operating plan: silviculture treatment areas' },
-  { id:'fp_fyop_silv',   url:`${AGOL}/FFA_ForestPlanning/FeatureServer/10/query`, queryDist:200, nameFields:['TREAT_TYPE','AOP_ID','OBJECTID'], authority:'GNL ArcGIS Online (forestry planning)', note:'Five-year operating plan: silviculture treatment areas' },
-  { id:'fp_oa',          url:`${AGOL}/FFA_ForestPlanning/FeatureServer/11/query`, queryDist:200, nameFields:['OA_ID','SUBAREA','YEAR','OBJECTID'], authority:'GNL ArcGIS Online (forestry planning)', note:'Designated forestry operating areas' },
-  { id:'domestic_nf',    url:`${AGOL}/FFA_DomesticHarvestBlocks_NF/FeatureServer/0/query`, queryDist:200, nameFields:['DISTRICT','ZONE','SPECIES','OBJECTID'], authority:'GNL ArcGIS Online (forestry)', note:'Domestic harvest blocks (island)' },
-  { id:'domestic_lb',    url:`${AGOL}/FFA_DomesticHarvestBlocks_LB/FeatureServer/0/query`, queryDist:200, nameFields:['DISTRICT','ZONE','SPECIES','OBJECTID'], authority:'GNL ArcGIS Online (forestry)', note:'Domestic harvest blocks (Labrador)' },
+  { id:'q_apps', accuracy:10, datum:'nad27null',         url:`${DNR}/Mineral_Lands/MapServer/6/query`, queryDist:500, nameFields:['COMPANY','FILENUMBER','PERMIT_ID'], authority:'dnrmaps (live tenure database)', note:'Quarry applications (point locations)' },
+  { id:'q_sub', accuracy:10, datum:'nad27null',          url:`${DNR}/Mineral_Lands/MapServer/7/query`, queryDist:500, nameFields:['COMPANY','FILENUMBER','PERMIT_ID'], authority:'dnrmaps (live tenure database)', note:'Subordinate quarry permits' },
+  { id:'q_permits', accuracy:10, datum:'nad27null',      url:`${DNR}/Mineral_Lands/MapServer/8/query`, queryDist:500, nameFields:['COMPANY','FILENUMBER','PERMIT_ID'], authority:'dnrmaps (live tenure database)', note:'Quarry permits' },
+  { id:'q_leases', accuracy:10, datum:'nad27null',       url:`${DNR}/Mineral_Lands/MapServer/9/query`, queryDist:500, nameFields:['COMPANY','FILENUMBER','PERMIT_ID'], authority:'dnrmaps (live tenure database)', note:'Quarry leases' },
+  { id:'q_agol_mirror', accuracy:5,  url:`${AGOL}/Quarry_Permits_and_Leases___July_27_2026_/FeatureServer/0/query`, queryDist:500, nameFields:['COMPANY','FILENUMBER'], authority:'GNL ArcGIS Online (dated mirror)', note:'Boundary_Status cross-check only', optional:true },
+  { id:'npa_live', accuracy:10,       url:`${AGOL}/No_Quarry_Permits_Available_VIEW/FeatureServer/2/query`, queryDist:200, nameFields:['Location','Description','OBJECTID'], authority:'GNL ArcGIS Online (Energy and Mines)', note:'No Permits Available areas, s.5 Quarry Materials Regulations (live layer)' },
+  { id:'qmel_live', accuracy:10,      url:`${AGOL}/Quarry_Material_Exploration_License/FeatureServer/3/query`, queryDist:500, nameFields:['Licensee','Lic_Num','File_Num','Status','Material'], authority:'GNL ArcGIS Online (Energy and Mines)', note:'Quarry Material Exploration Licences (live layer)' },
+  { id:'q_proposed', accuracy:5,     url:`${AGOL}/Proposed_Quarries_Boundaries_view/FeatureServer/0/query`, queryDist:500, nameFields:['Applicant','FILENUMBER','QNUM','ApplicationType'], authority:'GNL ArcGIS Online (Energy and Mines)', note:'Proposed quarry boundaries (pending applications)' },
+  { id:'agri_rfp', accuracy:10,       url:`${AGOL}/AgricultureBoundaries/FeatureServer/8/query`, queryDist:200, nameFields:['AOI_NAME','PolygonID','OBJECTID'], authority:'GNL ArcGIS Online (agriculture)', note:'Agriculture development / RFP areas' },
+  { id:'tx_nalcor', accuracy:10,      url:`${DNR}/Map_Layers/MapServer/15/query`, queryDist:300, nameFields:['TL_ID','NAME','OBJECTID'], authority:'dnrmaps (Geoscience Atlas)', note:'NL Hydro (Nalcor) transmission lines' },
+  { id:'tx_canvec', accuracy:15,      url:`${DNR}/Map_Layers/MapServer/16/query`, queryDist:300, nameFields:['PROVIDER','TYPE','NAME','OBJECTID'], authority:'dnrmaps (Geoscience Atlas)', note:'CanVec transmission lines (federal compilation)' },
+  { id:'fp_aop_harv', accuracy:15,    url:`${AGOL}/FFA_ForestPlanning/FeatureServer/0/query`, queryDist:200, nameFields:['AOP_ID','OBJECTID'], authority:'GNL ArcGIS Online (forestry planning)', note:'Annual operating plan: commercial harvest blocks' },
+  { id:'fp_fyop_harv', accuracy:15,   url:`${AGOL}/FFA_ForestPlanning/FeatureServer/6/query`, queryDist:200, nameFields:['AOP_ID','OBJECTID'], authority:'GNL ArcGIS Online (forestry planning)', note:'Five-year operating plan: commercial harvest blocks' },
+  { id:'fp_aop_silv', accuracy:15,    url:`${AGOL}/FFA_ForestPlanning/FeatureServer/5/query`, queryDist:200, nameFields:['TREAT_TYPE','AOP_ID','OBJECTID'], authority:'GNL ArcGIS Online (forestry planning)', note:'Annual operating plan: silviculture treatment areas' },
+  { id:'fp_fyop_silv', accuracy:15,   url:`${AGOL}/FFA_ForestPlanning/FeatureServer/10/query`, queryDist:200, nameFields:['TREAT_TYPE','AOP_ID','OBJECTID'], authority:'GNL ArcGIS Online (forestry planning)', note:'Five-year operating plan: silviculture treatment areas' },
+  { id:'fp_oa', accuracy:15,          url:`${AGOL}/FFA_ForestPlanning/FeatureServer/11/query`, queryDist:200, nameFields:['OA_ID','SUBAREA','YEAR','OBJECTID'], authority:'GNL ArcGIS Online (forestry planning)', note:'Designated forestry operating areas' },
+  { id:'domestic_nf', accuracy:15,    url:`${AGOL}/FFA_DomesticHarvestBlocks_NF/FeatureServer/0/query`, queryDist:200, nameFields:['DISTRICT','ZONE','SPECIES','OBJECTID'], authority:'GNL ArcGIS Online (forestry)', note:'Domestic harvest blocks (island)' },
+  { id:'domestic_lb', accuracy:15,    url:`${AGOL}/FFA_DomesticHarvestBlocks_LB/FeatureServer/0/query`, queryDist:200, nameFields:['DISTRICT','ZONE','SPECIES','OBJECTID'], authority:'GNL ArcGIS Online (forestry)', note:'Domestic harvest blocks (Labrador)' },
   { id:'fmd',            url:`${AGOL}/FFA_ForestManagementDistricts_NL/FeatureServer/6/query`, queryDist:0, nameFields:['MD_NAME','MD_NUM'], authority:'GNL ArcGIS Online (forestry)', note:'Forest management district (context: names the reviewing district office)' },
   /* Crown LandUseDetails department-interest layers. Same host as crown_titles
      (datum verified correct as served); schemas browser-verified only — the
      build sandbox cannot reach this server, so nameFields are a best-guess
      cascade and the first populated field wins. */
-  { id:'cl_bowater',     url:`${CROWN}/8/query`,  queryDist:200, nameFields:['NAME','DESCRIPTION','TITLENO','TITLETYPE','LABEL','OBJECTID'], authority:'Crown Lands (Land Use Atlas)', note:'Bowater land sales (historical paper-company land dispositions)' },
-  { id:'cl_forestry',    url:`${CROWN}/30/query`, queryDist:200, nameFields:['NAME','DESCRIPTION','DEPARTMENT','LABEL','OBJECTID'], authority:'Crown Lands (Land Use Atlas)', note:'Forestry land-use interest areas (departmental flag layer)' },
-  { id:'cl_wildlife',    url:`${CROWN}/29/query`, queryDist:200, nameFields:['NAME','DESCRIPTION','DEPARTMENT','LABEL','OBJECTID'], authority:'Crown Lands (Land Use Atlas)', note:'Wildlife land-use interest areas (departmental flag layer)' },
-  { id:'cl_hydro',       url:`${CROWN}/28/query`, queryDist:200, nameFields:['NAME','DESCRIPTION','DEPARTMENT','LABEL','OBJECTID'], authority:'Crown Lands (Land Use Atlas)', note:'Nalcor Hydro and NF Power land-use interest areas' },
-  { id:'cl_agri',        url:`${CROWN}/27/query`, queryDist:200, nameFields:['NAME','DESCRIPTION','DEPARTMENT','LABEL','OBJECTID'], authority:'Crown Lands (Land Use Atlas)', note:'Agriculture land-use interest areas (Crown flag layer)' },
-  { id:'cl_mines',       url:`${CROWN}/22/query`, queryDist:200, nameFields:['NAME','DESCRIPTION','DEPARTMENT','LABEL','OBJECTID'], authority:'Crown Lands (Land Use Atlas)', note:'Mines and Energy land-use interest areas' },
-  { id:'cl_tourism',     url:`${CROWN}/18/query`, queryDist:200, nameFields:['NAME','DESCRIPTION','DEPARTMENT','LABEL','OBJECTID'], authority:'Crown Lands (Land Use Atlas)', note:'Tourism, Culture, Arts and Recreation land-use interest areas' },
-  { id:'cl_federal',     url:`${CROWN}/25/query`, queryDist:200, nameFields:['NAME','DESCRIPTION','DEPARTMENT','LABEL','OBJECTID'], authority:'Crown Lands (Land Use Atlas)', note:'Federal lands' },
-  { id:'cl_mpr',         url:`${CROWN}/37/query`, queryDist:200, nameFields:['NAME','DESCRIPTION','MUNICIPALI','LABEL','OBJECTID'], authority:'Crown Lands (Land Use Atlas)', note:'Municipal plan restrictions' },
+  { id:'cl_bowater', accuracy:10,     url:`${CROWN}/8/query`,  queryDist:200, nameFields:['NAME','DESCRIPTION','TITLENO','TITLETYPE','LABEL','OBJECTID'], authority:'Crown Lands (Land Use Atlas)', note:'Bowater land sales (historical paper-company land dispositions)' },
+  { id:'cl_forestry', accuracy:10,    url:`${CROWN}/30/query`, queryDist:200, nameFields:['NAME','DESCRIPTION','DEPARTMENT','LABEL','OBJECTID'], authority:'Crown Lands (Land Use Atlas)', note:'Forestry land-use interest areas (departmental flag layer)' },
+  { id:'cl_wildlife', accuracy:10,    url:`${CROWN}/29/query`, queryDist:200, nameFields:['NAME','DESCRIPTION','DEPARTMENT','LABEL','OBJECTID'], authority:'Crown Lands (Land Use Atlas)', note:'Wildlife land-use interest areas (departmental flag layer)' },
+  { id:'cl_hydro', accuracy:10,       url:`${CROWN}/28/query`, queryDist:200, nameFields:['NAME','DESCRIPTION','DEPARTMENT','LABEL','OBJECTID'], authority:'Crown Lands (Land Use Atlas)', note:'Nalcor Hydro and NF Power land-use interest areas' },
+  { id:'cl_agri', accuracy:10,        url:`${CROWN}/27/query`, queryDist:200, nameFields:['NAME','DESCRIPTION','DEPARTMENT','LABEL','OBJECTID'], authority:'Crown Lands (Land Use Atlas)', note:'Agriculture land-use interest areas (Crown flag layer)' },
+  { id:'cl_mines', accuracy:10,       url:`${CROWN}/22/query`, queryDist:200, nameFields:['NAME','DESCRIPTION','DEPARTMENT','LABEL','OBJECTID'], authority:'Crown Lands (Land Use Atlas)', note:'Mines and Energy land-use interest areas' },
+  { id:'cl_tourism', accuracy:10,     url:`${CROWN}/18/query`, queryDist:200, nameFields:['NAME','DESCRIPTION','DEPARTMENT','LABEL','OBJECTID'], authority:'Crown Lands (Land Use Atlas)', note:'Tourism, Culture, Arts and Recreation land-use interest areas' },
+  { id:'cl_federal', accuracy:10,     url:`${CROWN}/25/query`, queryDist:200, nameFields:['NAME','DESCRIPTION','DEPARTMENT','LABEL','OBJECTID'], authority:'Crown Lands (Land Use Atlas)', note:'Federal lands' },
+  { id:'cl_mpr', accuracy:10,         url:`${CROWN}/37/query`, queryDist:200, nameFields:['NAME','DESCRIPTION','MUNICIPALI','LABEL','OBJECTID'], authority:'Crown Lands (Land Use Atlas)', note:'Municipal plan restrictions' },
 
   // Mineral tenure / claims (referral)
-  { id:'claims', datum:'nad27null', /*+shift margin*/         url:`${DNR}/Mineral_Lands/MapServer/0/query`, queryDist:200, nameFields:['LICENCE','CLIENT','OBJECTID'], authority:'dnrmaps (live tenure database)', note:'Map staked claims' },
-  { id:'min_tenure', datum:'nad27null',     url:`${DNR}/Mineral_Lands/MapServer/5/query`, queryDist:200, nameFields:['TENURE_ID','CLIENT','OBJECTID'], authority:'dnrmaps (live tenure database)', note:'Mineral tenure' },
+  { id:'claims', accuracy:10, datum:'nad27null', /*+shift margin*/         url:`${DNR}/Mineral_Lands/MapServer/0/query`, queryDist:200, nameFields:['LICENCE','CLIENT','OBJECTID'], authority:'dnrmaps (live tenure database)', note:'Map staked claims' },
+  { id:'min_tenure', accuracy:10, datum:'nad27null',     url:`${DNR}/Mineral_Lands/MapServer/5/query`, queryDist:200, nameFields:['TENURE_ID','CLIENT','OBJECTID'], authority:'dnrmaps (live tenure database)', note:'Mineral tenure' },
 
   // Land_Use referral layers (dnrmaps)
-  { id:'lu_protected',   datum:'nad27null', url:`${DNR}/Land_Use/MapServer/0/query`, queryDist:200, nameFields:['NAME','AREA_NAME','OBJECTID'], authority:'dnrmaps', note:'Protected Areas Plan 2020' },
-  { id:'lu_specified',   datum:'nad27null', url:`${DNR}/Land_Use/MapServer/1/query`, queryDist:200, nameFields:['NAME','OBJECTID'], authority:'dnrmaps', note:'Specified material lands' },
-  { id:'lu_lil',         datum:'nad27null', url:`${DNR}/Land_Use/MapServer/2/query`, queryDist:200, nameFields:['NAME','OBJECTID'], authority:'dnrmaps', note:'Labrador Inuit Lands' },
-  { id:'lu_lisa',        datum:'nad27null', url:`${DNR}/Land_Use/MapServer/3/query`, queryDist:200, nameFields:['NAME','OBJECTID'], authority:'dnrmaps', note:'Labrador Inuit Settlement Area' },
-  { id:'lu_cpcad',       datum:'nad27null', url:`${DNR}/Land_Use/MapServer/4/query`, queryDist:200, nameFields:['NAME','OBJECTID'], authority:'dnrmaps', note:'Canadian protected/conserved areas' },
-  { id:'lu_pws',         datum:'nad27null', url:`${DNR}/Land_Use/MapServer/5/query`, queryDist:200, nameFields:['NAME','PWS_NAME','OBJECTID'], authority:'dnrmaps', note:'Public water supplies' },
-  { id:'lu_municipal',   datum:'nad27null', url:`${DNR}/Land_Use/MapServer/6/query`, queryDist:200, nameFields:['NAME','MUNICIPALI','OBJECTID'], authority:'dnrmaps', note:'Municipal boundaries' },
-  { id:'lu_planning',    datum:'nad27null', url:`${DNR}/Land_Use/MapServer/7/query`, queryDist:200, nameFields:['MUNICIPALI','OBJECTID'], authority:'dnrmaps', note:'Planning areas (MPAB_LINK to plan)' },
-  { id:'lu_wind',        datum:'nad27null', url:`${DNR}/Land_Use/MapServer/8/query`, queryDist:200, nameFields:['NAME','OBJECTID'], authority:'dnrmaps', note:'Wind energy land reserve' },
+  { id:'lu_protected', accuracy:10,   datum:'nad27null', url:`${DNR}/Land_Use/MapServer/0/query`, queryDist:200, nameFields:['NAME','AREA_NAME','OBJECTID'], authority:'dnrmaps', note:'Protected Areas Plan 2020' },
+  { id:'lu_specified', accuracy:10,   datum:'nad27null', url:`${DNR}/Land_Use/MapServer/1/query`, queryDist:200, nameFields:['NAME','OBJECTID'], authority:'dnrmaps', note:'Specified material lands' },
+  { id:'lu_lil', accuracy:10,         datum:'nad27null', url:`${DNR}/Land_Use/MapServer/2/query`, queryDist:200, nameFields:['NAME','OBJECTID'], authority:'dnrmaps', note:'Labrador Inuit Lands' },
+  { id:'lu_lisa', accuracy:10,        datum:'nad27null', url:`${DNR}/Land_Use/MapServer/3/query`, queryDist:200, nameFields:['NAME','OBJECTID'], authority:'dnrmaps', note:'Labrador Inuit Settlement Area' },
+  { id:'lu_cpcad', accuracy:10,       datum:'nad27null', url:`${DNR}/Land_Use/MapServer/4/query`, queryDist:200, nameFields:['NAME','OBJECTID'], authority:'dnrmaps', note:'Canadian protected/conserved areas' },
+  { id:'lu_pws', accuracy:10,         datum:'nad27null', url:`${DNR}/Land_Use/MapServer/5/query`, queryDist:200, nameFields:['NAME','PWS_NAME','OBJECTID'], authority:'dnrmaps', note:'Public water supplies' },
+  { id:'lu_municipal', accuracy:10,   datum:'nad27null', url:`${DNR}/Land_Use/MapServer/6/query`, queryDist:200, nameFields:['NAME','MUNICIPALI','OBJECTID'], authority:'dnrmaps', note:'Municipal boundaries' },
+  { id:'lu_planning', accuracy:10,    datum:'nad27null', url:`${DNR}/Land_Use/MapServer/7/query`, queryDist:200, nameFields:['MUNICIPALI','OBJECTID'], authority:'dnrmaps', note:'Planning areas (MPAB_LINK to plan)' },
+  { id:'lu_wind', accuracy:10,        datum:'nad27null', url:`${DNR}/Land_Use/MapServer/8/query`, queryDist:200, nameFields:['NAME','OBJECTID'], authority:'dnrmaps', note:'Wind energy land reserve' },
 
   // Water Resources (AGOL is authoritative for these; WRMD publisher)
-  { id:'pwsa',           url:`${AGOL}/Public_Water_Supply_Areas/FeatureServer/0/query`, queryDist:100, nameFields:['NAME','PWS_NAME','OBJECTID'], authority:'GNL ArcGIS Online (WRMD)', note:'Public water supply areas' },
-  { id:'intakes',        url:`${AGOL}/Intakes_and_Wellheads/FeatureServer/0/query`, queryDist:1000, nameFields:['NAME','TYPE','OBJECTID'], authority:'GNL ArcGIS Online (WRMD)', note:'Intakes and wellheads' },
-  { id:'water_rights',   url:`${AGOL}/Water_Rights/FeatureServer/0/query`, queryDist:1000, nameFields:['NAME','HOLDER','OBJECTID'], authority:'GNL ArcGIS Online (WRMD)', note:'Water rights' },
-  { id:'nat_drain',      url:`${AGOL}/Natural_Drainage_Outside_Protected_Area/FeatureServer/0/query`, queryDist:100, nameFields:['NAME','OBJECTID'], authority:'GNL ArcGIS Online (WRMD)', note:'Natural drainage outside PWSA' },
-  { id:'flood',          url:`${AGOL}/Flood_Risk_Extents/FeatureServer/0/query`, queryDist:100, nameFields:['COMMUNITY','NAME','OBJECTID'], authority:'GNL ArcGIS Online (WRMD)', note:'Flood risk extents' },
+  { id:'pwsa', accuracy:10,           url:`${AGOL}/Public_Water_Supply_Areas/FeatureServer/0/query`, queryDist:100, nameFields:['NAME','PWS_NAME','OBJECTID'], authority:'GNL ArcGIS Online (WRMD)', note:'Public water supply areas' },
+  { id:'intakes', accuracy:10,        url:`${AGOL}/Intakes_and_Wellheads/FeatureServer/0/query`, queryDist:1000, nameFields:['NAME','TYPE','OBJECTID'], authority:'GNL ArcGIS Online (WRMD)', note:'Intakes and wellheads' },
+  { id:'water_rights', accuracy:10,   url:`${AGOL}/Water_Rights/FeatureServer/0/query`, queryDist:1000, nameFields:['NAME','HOLDER','OBJECTID'], authority:'GNL ArcGIS Online (WRMD)', note:'Water rights' },
+  { id:'nat_drain', accuracy:10,      url:`${AGOL}/Natural_Drainage_Outside_Protected_Area/FeatureServer/0/query`, queryDist:100, nameFields:['NAME','OBJECTID'], authority:'GNL ArcGIS Online (WRMD)', note:'Natural drainage outside PWSA' },
+  { id:'flood', accuracy:10,          url:`${AGOL}/Flood_Risk_Extents/FeatureServer/0/query`, queryDist:100, nameFields:['COMMUNITY','NAME','OBJECTID'], authority:'GNL ArcGIS Online (WRMD)', note:'Flood risk extents' },
 
   // Protected areas (AGOL)
-  { id:'prov_protected', url:`${AGOL}/Provincial_Protected_Areas/FeatureServer/0/query`, queryDist:100, nameFields:['NAME','PROTECTED_AREA_NAME','OBJECTID'], authority:'GNL ArcGIS Online', note:'Provincial protected areas' },
-  { id:'mmnpr',          url:`${AGOL}/MMNPR/FeatureServer/0/query`, queryDist:100, nameFields:['NAME','OBJECTID'], authority:'GNL ArcGIS Online', note:'Mealy Mountains NPR' },
+  { id:'prov_protected', accuracy:10, url:`${AGOL}/Provincial_Protected_Areas/FeatureServer/0/query`, queryDist:100, nameFields:['NAME','PROTECTED_AREA_NAME','OBJECTID'], authority:'GNL ArcGIS Online', note:'Provincial protected areas' },
+  { id:'mmnpr', accuracy:10,          url:`${AGOL}/MMNPR/FeatureServer/0/query`, queryDist:100, nameFields:['NAME','OBJECTID'], authority:'GNL ArcGIS Online', note:'Mealy Mountains NPR' },
 
   // E4/E6 structures and lines
-  { id:'bldg_bing',      url:`${AGOL}/Bing_BuildingFootprints/FeatureServer/0/query`, queryDist:2000, nameFields:['OBJECTID'], authority:'GNL ArcGIS Online (Bing-derived)', note:'Building footprints (AI-extracted; gaps expected)' },
-  { id:'bldg_topo', datum:'nad27null',      url:`${DNR}/Topographic/MapServer/10/query`, queryDist:2000, nameFields:['ENTITY_CLA','ATTRIBUTES','OBJECTID'], authority:'dnrmaps (1:50k topo)', note:'Building symbol points' },
-  { id:'tx_nalcor',      url:`${DNR}/Map_Layers/MapServer/15/query`, queryDist:300, nameFields:['NAME','OBJECTID'], authority:'dnrmaps', note:'Nalcor transmission line' },
-  { id:'tx_canvec',      url:`${DNR}/Map_Layers/MapServer/16/query`, queryDist:300, nameFields:['NAME','OBJECTID'], authority:'dnrmaps', note:'CanVec transmission lines' },
+  { id:'bldg_bing', accuracy:5,      url:`${AGOL}/Bing_BuildingFootprints/FeatureServer/0/query`, queryDist:2000, nameFields:['OBJECTID'], authority:'GNL ArcGIS Online (Bing-derived)', note:'Building footprints (AI-extracted; gaps expected)' },
+  { id:'bldg_topo', accuracy:25, datum:'nad27null',      url:`${DNR}/Topographic/MapServer/10/query`, queryDist:2000, nameFields:['ENTITY_CLA','ATTRIBUTES','OBJECTID'], authority:'dnrmaps (1:50k topo)', note:'Building symbol points' },
 ];
 
 /* NL Geodetic Network control monuments (reference layer, never a conflict) */
@@ -123,15 +121,15 @@ const NLGN_SOURCE = { id:'nlgn', url:`${AGOL}/Control_Monuments_Public/FeatureSe
 
 /* Bundled snapshots (no live source exists / hand-maintained upstream) */
 const BUNDLED = [
-  { id:'protected_roads', nameFields:['name'], path:'data/protected_roads.geojson', queryDist:200, snapshot:'2026-08-11',
+  { id:'protected_roads', accuracy:10, nameFields:['name'], path:'data/protected_roads.geojson', queryDist:200, snapshot:'2026-08-11',
     authority:'Municipal Affairs KMZ, snapshot 2026-08-11', note:'Protected Road zoning polygons (429 roads, 853 polygons)' },
-  { id:'building_control', nameFields:['name'], path:'data/building_control.geojson', queryDist:200, snapshot:'2026-08-11',
+  { id:'building_control', accuracy:10, nameFields:['name'], path:'data/building_control.geojson', queryDist:200, snapshot:'2026-08-11',
     authority:'Municipal Affairs KMZ, snapshot 2026-08-11', note:'Building control areas (corridor polygons) along protected roads' },
-  { id:'no_permit_areas', nameFields:['name'], path:'data/no_permit_areas.geojson', queryDist:200, snapshot:'2026-08-13',
+  { id:'no_permit_areas', accuracy:10, nameFields:['name'], path:'data/no_permit_areas.geojson', queryDist:200, snapshot:'2026-08-13',
     authority:'Energy and Mines (formerly IET) quarries site KMZ, snapshot 2026-08-13', note:'No Permits Available areas, s.5 Quarry Materials Regulations (5 designated areas). Listing is province-described work-in-progress; absence of a polygon is not proof none exists.' },
-  { id:'qmels', nameFields:['name'], path:'data/qmels.geojson', queryDist:500, snapshot:'2024-10-25',
+  { id:'qmels', accuracy:10, nameFields:['name'], path:'data/qmels.geojson', queryDist:500, snapshot:'2024-10-25',
     authority:'Energy and Mines (formerly IET) quarries site KMZ, dated 2024-10-25 (STALE: many licences since expired or issued)', note:'Quarry Materials Exploration Licences' },
-  { id:'q_snapshot', nameFields:['name'], path:'data/quarry_tenure_snapshot.geojson', queryDist:500, snapshot:'2026-08-13',
+  { id:'q_snapshot', accuracy:5, nameFields:['name'], path:'data/quarry_tenure_snapshot.geojson', queryDist:500, snapshot:'2026-08-13',
     authority:'Energy and Mines (formerly IET) quarries site KMZ, snapshot 2026-08-13; datum-verified against permit 151600 (104.7 m to Route 470 vs ~100 m ground truth, area 2.00 ha exact)', note:'Quarry permit/lease boundary polygons (1,340)' },
 ];
 
@@ -427,6 +425,7 @@ function nearest(boundary, results, ids, nameOverride) {
         dist: d, feature: f,
         name: nameOverride ? nameOverride(f) : featureName(f, r.src.nameFields),
         source: r.src.note, authority: r.src.authority, queried: r.queried,
+        accuracy: r.src.accuracy || null,
       };
     }
   }
@@ -462,7 +461,24 @@ function sourceStatus(results, ids) {
 function verdictFor(nearestHit, setback, anySourceFailed) {
   if (nearestHit && nearestHit.dist < setback) return 'ENCROACHES';
   if (anySourceFailed) return 'ADVISORY';
+  if (inUncertaintyBand(nearestHit, setback)) return 'ADVISORY';
   return 'PASS';
+}
+
+/* A measured clearance is only as good as the source's positional accuracy.
+   When the margin over the setback is smaller than the accuracy of the layer
+   the nearest feature came from, the pass is not distinguishable from a fail
+   and must not render as one. */
+function inUncertaintyBand(nearestHit, setback) {
+  return !!(nearestHit && nearestHit.accuracy
+    && nearestHit.dist >= setback
+    && (nearestHit.dist - setback) < nearestHit.accuracy);
+}
+
+function bandNote(nearestHit, setback) {
+  if (!inUncertaintyBand(nearestHit, setback)) return null;
+  const margin = Math.round(nearestHit.dist - setback);
+  return `Measured ${fmt(nearestHit.dist)} against a source accurate to roughly ±${nearestHit.accuracy} m: the ${margin} m margin over the ${setback} m setback is inside the source's positional uncertainty. This is not a clear pass — verify the distance on the ground before relying on it.`;
 }
 
 /* Cluster water hits into distinct physical watercourses (segments within
@@ -508,6 +524,7 @@ function runSectionG(boundary, results, opts) {
     checks.push({ id:'G1', label:'15 m from private property', setback:15, verdict:v, nearest:n,
       sources: sourceStatus(results, ['crown_titles','crown_apps']),
       notes: [
+        bandNote(n, 15),
         apps && apps.dist < 100 ? `A Crown title APPLICATION is ${fmt(apps.dist)} away (${apps.name}); an application is a competing interest the referral will see.` : null,
         n && n.dist < 15 ? 'If the intersecting title is held by the applicant, or written consent from the holder exists, this is not a conflict; state it on the application. The check cannot know who is applying.' : null,
         'Issued Crown titles layer is the only public source for private property. Unregistered or historic private interests are not screenable.',
@@ -562,6 +579,7 @@ function runSectionG(boundary, results, opts) {
       notes.push(`${overridden.length} unnamed road hit(s) within 50 m reclassified as forest access road(s): the province's FFA resource-roads layer maps the same alignment (or the Atlas classes it Resource/Recreation). The 15 m G2 setback governs these; see G2. Confirm classification with the Quarries Section.`);
     } else {
       v = verdictFor(nAll, 50, failed(['lu_roads_p','lu_roads_s']));
+      const bn = bandNote(nAll, 50); if (bn) notes.push(bn);
     }
     const nShow = firm.length ? firm[0] : nAll;
     checks.push({ id:'G3', label:'50 m from a road (paved municipal, gravel rural)', setback:50,
@@ -576,6 +594,7 @@ function runSectionG(boundary, results, opts) {
       verdict: verdictFor(n, 90, failed(ids)), nearest:n,
       sources: sourceStatus(results, ['lu_prz','protected_roads','building_control']),
       notes: [
+        bandNote(n, 90),
         bcl && bcl.dist === 0 ? `The boundary lies WITHIN the mapped building control area for ${bcl.name}. This is a corridor polygon (typically a few hundred metres each side of the road), not a line: overlap means the site falls inside the mapped area, not that a control line touches the boundary. A separate Municipal Affairs approvals regime applies; corridor extents are as mapped by Municipal Affairs and are not survey-anchored.` :
         bcl && bcl.dist < 90 ? `Building control area boundary ${fmt(bcl.dist)} away (${bcl.name}); a separate Municipal Affairs regime applies along protected roads.` : null,
         'Screened against the Protected Road Zoning KMZ snapshot; per-road plans on the Municipal Affairs list govern.',
@@ -591,6 +610,7 @@ function runSectionG(boundary, results, opts) {
     const notes = [
       streamNear.length ? `Note: ${streamNear.length} mapped drainage/stream line(s) exist within 50 m but are not screened (frequently dry at mapped locations; an operating permit has been issued adjacent to such lines). If any carries flow, the 50 m setback applies to it; verify on site.` : null,
       'Screened against mapped lakes and ponds (forestry inventory + 1:50k topo polygons). Mapped stream lines are excluded from this verdict; small waterbodies may be unmapped in both sources.',
+      bandNote(n, 50),
     ].filter(Boolean);
     checks.push({ id:'G5', label:'50 m from a waterbody (stream, pond)', setback:50,
       verdict: verdictFor(n, 50, failed(wbIds)), nearest: n, sources: sourceStatus(results, wbIds), notes });
@@ -606,7 +626,8 @@ function runSectionG(boundary, results, opts) {
       sources: sourceStatus(results, ids),
       notes: [
         'Screened against the forestry inventory\'s wetland classes: Bog, Wet Bog, Treed Bog (per the layer\'s published NFCODE domain). Soil Barren and Rock Barren are dry-ground classes, not wetlands, and are excluded. The inventory can miss small marshes and fens; confirm on site.',
-      ] });
+        bandNote(nAll, 30),
+      ].filter(Boolean) });
   }
 
   { // No Permits Available areas (s.5) — not a Section G item but application-fatal
@@ -633,11 +654,14 @@ function runSectionG(boundary, results, opts) {
     const seen = new Set();
     const named = onSite.filter(h => { const k = h.name + '|' + h.source; if (seen.has(k)) return false; seen.add(k); return true; });
     let v = 'PASS';
+    const nTen = named[0] || nearest(boundary, results, ids);
     if (named.length) v = 'ENCROACHES';
     else if (failed(ids)) v = 'ADVISORY';
+    else if (inUncertaintyBand(nTen, 0)) v = 'ADVISORY';
     checks.push({ id:'TEN', label:'Existing quarry tenure overlap', setback:0,
-      verdict: v, nearest: named[0] || nearest(boundary, results, ids), sources: sourceStatus(results, ids),
+      verdict: v, nearest: nTen, sources: sourceStatus(results, ids),
       notes: [
+        !named.length && inUncertaintyBand(nTen, 0) ? `Mapped tenure ${fmt(nTen.dist)} away, inside the source's roughly ±${nTen.accuracy} m positional accuracy: an overlap cannot be ruled out from the map alone. Verify against the recorded boundary before relying on separation.` : null,
         named.length ? `WARNING: the proposed boundary OVERLAPS a mapped existing (or recently mapped) quarry location: ${named.slice(0,4).map(h=>{
           const d = (h.feature.properties||{}).description || '';
           const pm = d.match(/Permit number (\d+)/); const st = d.match(/Activity status (\w+)/);

@@ -86,6 +86,7 @@ details.srcd .src{margin-top:2px}
 #progress{font-family:var(--mono);font-size:.78rem;color:var(--dim);margin:12px 0;display:none;white-space:pre-wrap}
 #printbtn{display:none;font-family:var(--mono);font-size:.85rem;background:var(--ink);color:var(--paper);border:0;padding:10px 18px;cursor:pointer;margin:24px 0 0}
 footer{margin-top:48px;border-top:2px solid var(--ink);padding-top:10px;font-size:.78rem;color:var(--dim)}
+.summaryline{border:2px solid var(--ink);padding:10px 12px;margin:14px 0;font-size:.85rem;background:#EFEEE9}
 #err{display:none;border:2px solid var(--fail);color:var(--fail);padding:12px;margin:16px 0;font-size:.9rem}
 @media (max-width:700px){
   .sheet{border:0;padding:16px 12px 60px}
@@ -852,15 +853,26 @@ function render(out, meta){
   stamp.querySelector('.dtl').textContent = out.verdict.detail
     + ` — ${meta.fileName}, ${meta.areaHa} ha, screened ${out.ranAt.replace('T',' ').slice(0,19)}Z.`;
 
-  let h = '<section class="rpt"><h2>Section G — Boundary Setbacks</h2><table class="stack"><thead><tr><th>Check</th><th>Verdict</th><th>Nearest feature</th><th>Distance</th></tr></thead><tbody>';
+  const VLABEL = { PASS:'CLEAR (in data)', ADVISORY:'ADVISORY', ENCROACHES:'ENCROACHES' };
+  const nScreened = out.g.length;
+  const nClear = out.g.filter(c=>c.verdict==='PASS').length;
+  const nAdv = out.g.filter(c=>c.verdict==='ADVISORY').length;
+  const nEnc = out.g.filter(c=>c.verdict==='ENCROACHES').length;
+  const nUnscreenable = out.referrals.unknowns.length + 3; /* + unrecorded private titles, cabin trails, unmapped timber limits */
+  let h = `<div class="summaryline"><b>${nScreened}</b> checks screened against published provincial data: `
+    + `<b>${nClear}</b> clear in the data${nAdv?`, <b>${nAdv}</b> advisory`:''}${nEnc?`, <b>${nEnc}</b> encroaching`:''}. `
+    + `At least <b>${nUnscreenable}</b> interest types are NOT screenable from public data (archaeological potential, species occurrences, unrecorded private titles, cabin access trails, third-party timber limits). `
+    + `"Clear" means no conflict in the published data at the stamped query times — it is not clearance, and mapped positions carry the per-source accuracy shown beside each distance.</div>`;
+  h += '<div class="printonly note">This report screens published provincial data only. Archaeological potential, species occurrences, unrecorded private titles, cabin access trails, and third-party timber limits are not screenable from public sources. Clear results reflect the published data at the stamped times, not clearance; distances carry the positional accuracy of their source layers.</div>';
+  h += '<section class="rpt"><h2>Section G — Boundary Setbacks</h2><table class="stack"><thead><tr><th>Check</th><th>Verdict</th><th>Nearest feature</th><th>Distance</th></tr></thead><tbody>';
   for (const c of out.g) {
     const enc = c.nearest && (c.nearest.dist < (c.setback||0) || c.nearest.dist === 0);
     h += `<tr class="row${c.verdict}"><td><b>${c.id}</b> ${esc(c.label)}`
       + c.notes.map(n=>`<div class="note">${esc(n)}</div>`).join('')
       + srcFold(c.sources)
-      + `</td><td data-l="verdict"><span class="v ${c.verdict}">${c.verdict}</span></td>`
+      + `</td><td data-l="verdict"><span class="v ${c.verdict}">${VLABEL[c.verdict]||c.verdict}</span></td>`
       + `<td data-l="nearest feature">${c.nearest? esc(c.nearest.name) + `<div class="src">${esc(c.nearest.source)}</div>` + (enc ? attrFold(c.nearest.feature,'full record') : '') : '<span class="src">none within query range</span>'}</td>`
-      + `<td class="num" data-l="distance">${c.nearest? fmt(c.nearest.dist) : '—'}</td></tr>`;
+      + `<td class="num" data-l="distance">${c.nearest? fmt(c.nearest.dist) + (c.nearest.accuracy? `<div class="src">source ±${c.nearest.accuracy} m</div>` : '') : '—'}</td></tr>`;
   }
   h += '</tbody></table></section>';
 

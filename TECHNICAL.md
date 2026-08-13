@@ -193,6 +193,32 @@ position and re-screened; the report is titled with the displacement so
 adjusted runs are distinguishable from the original. Rings and measurements
 are explicitly flagged stale between moving and re-screening.
 
+## Positional uncertainty bands (added 2026-08)
+
+Every screening source carries an `accuracy` value: an approximate horizontal
+positional accuracy in metres for the layer's linework. Assigned values:
+1:50k NTS topo layers ±25 m (the published NTS horizontal standard);
+forestry-inventory land cover and planning layers ±15 m (photo-interpreted);
+most parcel/area layers ±10 m; Atlas road centrelines and AGOL quarry
+boundary polygons ±5 m. These are engineering estimates for banding, not
+certified figures; they are shown beside every distance in the report.
+
+The band rule: a verdict may not render as a clear pass when the margin over
+the setback is smaller than the accuracy of the source the nearest feature
+came from. `verdictFor` degrades such results to ADVISORY and a note states
+the measured distance, the source accuracy, and that the margin is inside the
+uncertainty — verify on the ground. The TEN overlap check applies the same
+rule at zero: mapped tenure closer than the source's accuracy renders
+"overlap cannot be ruled out" rather than a clean pass. The regression anchor
+(road 104.7 m over a 50 m setback on ±5 m Atlas roads) is comfortably outside
+every band and is protected by a test.
+
+Report presentation changed with it: a summary block leads every report
+(checks screened, clear/advisory/encroaching counts, and the count of
+interest types that are not screenable from public data), the printed report
+carries the same limitation statement in its header, PASS renders as
+"CLEAR (in data)", and every distance shows its source accuracy.
+
 ## Outage behavior
 
 A failed source can never produce a clean answer. Section G verdicts degrade

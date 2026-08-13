@@ -313,6 +313,53 @@ async function main() {
     ok(tRef && tRef.total >= 1 && /Bowater/.test(tRef.why), 'Bowater parcel overlap produces the timber-interest referral');
   }
 
+  console.log('\n[14] uncertainty bands: clearance inside source accuracy is not a pass');
+  {
+    ok(app.SOURCES.every(s => typeof s.accuracy === 'number' || s.id === 'fmd'),
+       'every screening source carries an accuracy value (fmd context-only exempt)');
+    ok(app.SOURCES.find(s=>s.id==='topo_wpoly').accuracy === 25 && app.SOURCES.find(s=>s.id==='lu_roads_p').accuracy === 5,
+       '1:50k topo carries \u00b125 m; Atlas roads \u00b15 m');
+    const ids = app.SOURCES.map(s=>s.id);
+    ok(new Set(ids).size === ids.length, 'source registry has no duplicate ids');
+    // fixed local box (~-56.000..-55.999 lon, 48.500..48.501 lat), east edge at -55.999
+    const box = global.turf.polygon([[[-56.000,48.500],[-55.999,48.500],[-55.999,48.501],[-56.000,48.501],[-56.000,48.500]]]);
+    const wb = (wlon) => ({ id:'topo_wpoly', ok:true, queried:new Date().toISOString(),
+      src:{ id:'topo_wpoly', note:'Waterbody polygons (1:50k)', authority:'test', nameFields:['OBJECTID'], accuracy:25 },
+      features:[{ type:'Feature', properties:{OBJECTID:9}, geometry:{ type:'Polygon',
+        coordinates:[[[wlon,48.500],[wlon+0.001,48.500],[wlon+0.001,48.501],[wlon,48.501],[wlon,48.500]]] } }] });
+    const okSrc = id => ({ id, ok:true, queried:new Date().toISOString(),
+      src:{ id, note:id, authority:'test', nameFields:['OBJECTID'], accuracy:15 }, features:[] });
+    // ~60 m east: 0.00082 deg lon at 48.5N (cos48.5*111320*0.00082 ~ 60.4 m); margin over 50 m inside +-25 band
+    const gNear = app.runSectionG(box, { topo_wpoly: wb(-55.99818), wbody_isl: okSrc('wbody_isl'), wbody_lb: okSrc('wbody_lb') });
+    const near = gNear.find(c=>c.id==='G5');
+    ok(near.verdict === 'ADVISORY' && near.nearest.dist > 50 && near.nearest.dist < 75,
+       `clearance inside the \u00b125 m band degrades to ADVISORY (${Math.round(near.nearest.dist)} m)`);
+    ok(near.notes.some(n=>/positional uncertainty/.test(n)), 'band note explains the degradation');
+    // ~100 m east: comfortably outside the band -> PASS
+    const gFar = app.runSectionG(box, { topo_wpoly: wb(-55.99764), wbody_isl: okSrc('wbody_isl'), wbody_lb: okSrc('wbody_lb') });
+    const far = gFar.find(c=>c.id==='G5');
+    ok(far.verdict === 'PASS' && far.nearest.dist > 75, `clearance outside the band still passes (${Math.round(far.nearest.dist)} m)`);
+    // TEN: tenure ~3 m east on a +-5 m source, all TEN sources answering -> overlap cannot be ruled out
+    const tenNear = { id:'q_snapshot', ok:true, queried:new Date().toISOString(),
+      src:{ id:'q_snapshot', note:'Quarry tenure snapshot', authority:'test', nameFields:['name'], accuracy:5 },
+      features:[{ type:'Feature', properties:{ name:'Adjacent permit' }, geometry:{ type:'Polygon',
+        coordinates:[[[-55.99896,48.500],[-55.998,48.500],[-55.998,48.501],[-55.99896,48.501],[-55.99896,48.500]]] } }] };
+    const gTen = app.runSectionG(box, { q_snapshot: tenNear, q_permits: okSrc('q_permits'), q_leases: okSrc('q_leases'), q_sub: okSrc('q_sub') });
+    const ten = gTen.find(c=>c.id==='TEN');
+    ok(ten.verdict === 'ADVISORY' && ten.notes.some(n=>/cannot be ruled out/.test(n)),
+       `tenure inside the accuracy band is ADVISORY, not a clean pass (${ten.nearest.dist.toFixed(1)} m)`);
+    // named road ~125 m away on +-5 m Atlas roads with both road sources answering -> clean PASS survives
+    const road = { id:'lu_roads_p', ok:true, queried:new Date().toISOString(),
+      src:{ id:'lu_roads_p', note:'Primary roads', authority:'test', nameFields:['ROADNAME'], accuracy:5 },
+      features:[{ type:'Feature', properties:{ ROADNAME:'Route 470', ROADCLASS:'Collector' },
+        geometry:{ type:'LineString', coordinates:[[-55.99745,48.4995],[-55.99745,48.5015]] } }] };
+    const gRoad = app.runSectionG(box, { lu_roads_p: road, lu_roads_s: okSrc('lu_roads_s'),
+      res_roads_nf: okSrc('res_roads_nf'), res_roads_lb: okSrc('res_roads_lb'), res_roads_dnr: okSrc('res_roads_dnr') });
+    const g3 = gRoad.find(c=>c.id==='G3');
+    ok(g3.verdict === 'PASS' && g3.nearest.dist > 100,
+       `road clearance well outside the band still passes (${Math.round(g3.nearest.dist)} m)`);
+  }
+
   console.log(`\n${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
 }
