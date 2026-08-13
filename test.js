@@ -188,7 +188,7 @@ async function main() {
     ok(ten2.verdict !== 'ENCROACHES', `clean site does not trip TEN (${ten2.verdict})`);
   }
 
-  console.log('\n[11] snapshot names + operator declaration');
+  console.log('\n[11] snapshot names + G3 classification rule');
   {
     const snapRes = await app.loadBundled(app.BUNDLED.find(s => s.id === 'q_snapshot'), boundary, fetchFn);
     const g = app.runSectionG(boundary, { q_snapshot: snapRes });
@@ -196,21 +196,19 @@ async function main() {
     const note = (ten.notes||[]).join(' ');
     ok(/Pittman's Enterprises/.test(note), 'TEN names the holder from the snapshot');
     ok(/permit \d+/.test(note), 'TEN carries the permit number from the description');
-    // declaration: unnamed uncorroborated road within 50 m
+    // G3: unnamed uncorroborated road fails firm; Resource-classed reclassifies
     const road = { type:'Feature', properties:{ ROADCLASS:'Collector' },
       geometry:{ type:'LineString', coordinates:[[-58.7530,47.6086],[-58.7515,47.6090]] } };
     const roadsRes = { id:'lu_roads_p', ok:true, queried:new Date().toISOString(),
       src:{ id:'lu_roads_p', note:'Primary roads', authority:'test', nameFields:['ROADNAME'] }, features:[road] };
-    const gNo = app.runSectionG(boundary, { lu_roads_p: roadsRes });
-    const gYes = app.runSectionG(boundary, { lu_roads_p: roadsRes }, { declarations:{ forestAccessRoad:true } });
-    const g3no = gNo.find(c=>c.id==='G3'), g3yes = gYes.find(c=>c.id==='G3');
-    ok(g3no.verdict === 'ENCROACHES', `undeclared unnamed road inside 50 m fails G3 (${g3no.verdict})`);
-    ok(g3yes.verdict === 'ADVISORY', `declaration reclassifies it to ADVISORY (${g3yes.verdict})`);
-    ok(/OPERATOR DECLARATION/.test((g3yes.notes||[]).join(' ')), 'declaration recorded in G3 notes');
-    // a named road must resist the declaration
-    const named = { type:'Feature', properties:{ ROADNAME:'Route 470', ROADCLASS:'Collector' }, geometry: road.geometry };
-    const gNamed = app.runSectionG(boundary, { lu_roads_p: { ...roadsRes, features:[named] } }, { declarations:{ forestAccessRoad:true } });
-    ok(gNamed.find(c=>c.id==='G3').verdict === 'ENCROACHES', 'named road ignores the declaration');
+    const g3plain = app.runSectionG(boundary, { lu_roads_p: roadsRes }).find(c=>c.id==='G3');
+    ok(g3plain.verdict === 'ENCROACHES', `unnamed uncorroborated road inside 50 m fails G3 (${g3plain.verdict})`);
+    const res = { type:'Feature', properties:{ ROADCLASS:'Resource / Recreation' }, geometry: road.geometry };
+    const g3res = app.runSectionG(boundary, { lu_roads_p: { ...roadsRes, features:[res] } }).find(c=>c.id==='G3');
+    ok(g3res.verdict === 'ADVISORY', `Resource-classed road reclassifies to ADVISORY (${g3res.verdict})`);
+    const named = { type:'Feature', properties:{ ROADNAME:'Route 470', ROADCLASS:'Resource / Recreation' }, geometry: road.geometry };
+    const g3named = app.runSectionG(boundary, { lu_roads_p: { ...roadsRes, features:[named] } }).find(c=>c.id==='G3');
+    ok(g3named.verdict === 'ENCROACHES', 'named road always fails firm');
   }
 
   console.log(`\n${pass} passed, ${fail} failed`);

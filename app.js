@@ -497,13 +497,11 @@ function runSectionG(boundary, results, opts) {
       return false;
     };
     const within = collectWithin(boundary, results, ids, 50);
-    const decl = !!(opts.declarations && opts.declarations.forestAccessRoad);
-    const firm = [], overridden = [], declOverridden = [];
+    const firm = [], overridden = [];
     for (const h of within) {
       const declaredResource = /resource/i.test(String((h.feature.properties||{}).ROADCLASS||''));
       if (!isNamed(h.feature) && !isPavedClass(h.feature) && (declaredResource || coincidesResource(h.feature)))
         overridden.push(h);
-      else if (decl && !isNamed(h.feature) && !isPavedClass(h.feature)) { overridden.push(h); declOverridden.push(h); }
       else firm.push(h);
     }
     const nAll = nearest(boundary, results, ids);
@@ -512,9 +510,7 @@ function runSectionG(boundary, results, opts) {
     if (firm.length) { v = 'ENCROACHES'; }
     else if (overridden.length) {
       v = 'ADVISORY';
-      const corrob = overridden.length - declOverridden.length;
-      if (corrob) notes.push(`${corrob} unnamed road hit(s) within 50 m reclassified as forest access road(s): the province's FFA resource-roads layer maps the same alignment (or the Atlas classes it Resource/Recreation). The 15 m G2 setback governs these; see G2. Confirm classification with the Quarries Section.`);
-      if (declOverridden.length) notes.push(`OPERATOR DECLARATION recorded this run: the nearest road serving this site is a forest access road. ${declOverridden.length} unnamed, uncorroborated road hit(s) within 50 m reclassified on that declaration alone (named or paved-class roads are never affected by it). The declaration prints with this report; repeat it in the application and expect the Quarries Section to verify.`);
+      notes.push(`${overridden.length} unnamed road hit(s) within 50 m reclassified as forest access road(s): the province's FFA resource-roads layer maps the same alignment (or the Atlas classes it Resource/Recreation). The 15 m G2 setback governs these; see G2. Confirm classification with the Quarries Section.`);
     } else {
       v = verdictFor(nAll, 50, failed(['lu_roads_p','lu_roads_s']));
     }
@@ -799,7 +795,7 @@ async function runScreen(boundary, fetchFn, onProgress, opts) {
     .filter(r => r && r.ok && r.src && r.src.snapshot)
     .map(r => ({ id: r.id, note: r.src.note, snapshot: r.src.snapshot, ageDays: r.snapshotAgeDays, stale: r.stale }))
     .sort((a, b) => b.ageDays - a.ageDays);
-  return { verdict: overallVerdict(g), g, e, referrals, monuments, results, datumSentinel: datumSentinelStatus(), snapshotWarnings, declarations: opts.declarations || null, ranAt: new Date().toISOString() };
+  return { verdict: overallVerdict(g), g, e, referrals, monuments, results, datumSentinel: datumSentinelStatus(), snapshotWarnings, ranAt: new Date().toISOString() };
 }
 
 /* Datum audit: what each source's coordinates actually are, and how we know.

@@ -98,8 +98,6 @@ footer{margin-top:48px;border-top:2px solid var(--ink);padding-top:10px;font-siz
   #map{height:420px}
 }
 #toolrow{margin:10px 0 0;font-size:.85rem}
-#decl{display:block;margin-bottom:8px;cursor:pointer}
-#decl input{margin-right:6px}
 #drawrow,#adjrow{margin-top:6px}
 #toolrow button{font-family:var(--mono);font-size:.78rem;padding:5px 10px;cursor:pointer;background:var(--paper);border:1px solid var(--ink)}
 #toolrow button:hover{background:var(--ink);color:var(--paper)}
@@ -155,9 +153,6 @@ footer{margin-top:48px;border-top:2px solid var(--ink);padding-top:10px;font-siz
 </div>
 
 <div id="toolrow">
-  <label id="decl"><input type="checkbox" id="declfar">
-    Operator declaration: the nearest road serving this site is a <b>forest access road</b>
-    (unnamed road hits move from G3's 50 m to G2's 15 m setback; the declaration prints with the report)</label>
   <div id="drawrow">No boundary file yet? <button type="button" id="drawbtn">Draw a boundary on the map</button>
     <span id="drawctl" style="display:none">
       <button type="button" id="drawfinish">Finish (close polygon)</button>
@@ -452,13 +447,12 @@ async function screenBoundary(boundary, access, meta){
     let done=0, failed=[];
     const t0 = Date.now();
     window._bnd = boundary;
-    const opts = { declarations: { forestAccessRoad: $('#declfar').checked } };
     const out = await runScreen(boundary, (u,o)=>fetch(u,o), r => {
       done++;
       if (!r.ok && !r.missing) failed.push(r.id);
       stamp.querySelector('.dtl').textContent = `${done} of ${total} provincial sources answered`
         + (failed.length? ` (${failed.length} unreachable)` : '') + '.';
-    }, opts);
+    });
     $('#map').classList.remove('busy');
     drawHits(out);
     if (map.isStyleLoaded()) drawWaterTie(out); else map.once('idle', ()=>drawWaterTie(out));
@@ -909,8 +903,6 @@ function render(out, meta){
   }
 
   h += '</section><section class="rpt"><h2>Datum audit</h2><p class="note">Reference frame: NAD83(CSRS), the provincial survey datum realized by the NL Geodetic Network. What each source\'s coordinates actually are, how that was verified, and what was done about it:</p>';
-  if (out.declarations && out.declarations.forestAccessRoad)
-    h += '<p class="note" style="font-weight:600">Operator declaration recorded for this run: the nearest road serving this site is a forest access road. Unnamed road hits within 50 m were assessed under the 15 m G2 setback on that declaration (see G3 notes). Repeat the declaration in the application.</p>';
   { const sw = out.snapshotWarnings || [];
     const staleList = sw.filter(w => w.stale);
     if (staleList.length) h += `<p class="note" style="color:#b60;font-weight:600">STALE SNAPSHOTS: ${staleList.map(w => `${esc(w.note)} — ${w.snapshot} (${Math.round(w.ageDays/30)} months old)`).join('; ')}. Refresh these files (tools/kmz_to_geojson.py) before relying on their checks.</p>`;
