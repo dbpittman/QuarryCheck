@@ -105,7 +105,7 @@ table.stack td::before{content:attr(data-l) ": ";font-weight:700;text-transform:
 <tr><td data-l="service">Intakes_and_Wellheads/0</td><td data-l="content">intake/wellhead points</td><td data-l="status">LIVE <code>intakes</code></td><td data-l="use / reasoning">Water Resources referral</td></tr>
 <tr><td data-l="service">Water_Rights/0</td><td data-l="content">licensed water rights</td><td data-l="status">LIVE <code>water_rights</code></td><td data-l="use / reasoning">same</td></tr>
 <tr><td data-l="service">Natural_Drainage_Outside_Protected_Area/0</td><td data-l="content">drainage designations</td><td data-l="status">LIVE <code>nat_drain</code></td><td data-l="use / reasoning">same</td></tr>
-<tr><td data-l="service">Flood_Risk_Extents/0</td><td data-l="content">mapped flood extents</td><td data-l="status">LIVE <code>flood</code></td><td data-l="use / reasoning">same</td></tr>
+<tr><td data-l="service">Flood_Risk_Extents/0</td><td data-l="content">mapped flood extents</td><td data-l="status">RETIRED from live use</td><td data-l="use / reasoning">spatial queries take 18–30 s server-side (huge floodplain polygons), longer than the retry budget; replaced by a bundled envelope snapshot (§4)</td></tr>
 </tbody></table>
 <h3>Wetland / land cover</h3>
 <table class="stack"><thead><tr><th>Service</th><th>Content</th><th>Status</th><th>Use / reasoning</th></tr></thead><tbody>
@@ -161,7 +161,7 @@ table.stack td::before{content:attr(data-l) ": ";font-weight:700;text-transform:
 <tr><td data-l="layer">13/14 Indigenous 1 / Indigenous 2</td><td data-l="content">island-side Indigenous areas (apparent)</td><td data-l="status">CANDIDATE</td><td data-l="use / reasoning">semantics unknown (possibly reserve or asserted-interest areas); Labrador consultation is handled, island-side is not — verify in browser and wire if real</td></tr>
 <tr><td data-l="layer">15–17, 19–21, 23–24 Water Resources / Service NL / T&amp;I / Parks / Natural Areas / Other / Lands / Municipal Affairs</td><td data-l="content">departmental interest areas</td><td data-l="status">OMITTED (17 CANDIDATE)</td><td data-l="use / reasoning">duplicative of existing dedicated checks, except 17 Transportation and Infrastructure, which could ground the highway-access advisory in mapped data</td></tr>
 <tr><td data-l="layer">26 Aquaculture</td><td data-l="content">aquaculture interest areas</td><td data-l="status">OMITTED</td><td data-l="use / reasoning">marginal for quarries; revisit for coastal sites</td></tr>
-<tr><td data-l="layer">31–35 Flood Risk</td><td data-l="content">flood extents</td><td data-l="status">OMITTED</td><td data-l="use / reasoning">AGOL Flood_Risk_Extents already queried</td></tr>
+<tr><td data-l="layer">31–35 Flood Risk</td><td data-l="content">flood extents</td><td data-l="status">OMITTED</td><td data-l="use / reasoning">flood is screened from the bundled envelope snapshot (§4)</td></tr>
 <tr><td data-l="layer">36, 41 Admin boundaries, Places</td><td data-l="content">reference</td><td data-l="status">OMITTED</td><td data-l="use / reasoning">no bearing</td></tr>
 </tbody></table>
 <p>The same host's <b>NLImagery</b> tile service is one of the four basemaps.</p>
@@ -173,6 +173,7 @@ table.stack td::before{content:attr(data-l) ": ";font-weight:700;text-transform:
 <tr><td data-l="file">no_permit_areas.geojson</td><td data-l="upstream">Energy and Mines quarries site KMZ (2026-08-13)</td><td data-l="status">BUNDLED</td><td data-l="use / reasoning">NPA cross-check against the live layer; live layer already ahead of it (6 vs 5 areas)</td></tr>
 <tr><td data-l="file">qmels.geojson</td><td data-l="upstream">Energy and Mines quarries site KMZ (dated 2024-10-25)</td><td data-l="status">BUNDLED (STALE)</td><td data-l="use / reasoning">retained only as cross-check under a stale banner; live QMEL layer is current</td></tr>
 <tr><td data-l="file">quarry_tenure_snapshot.geojson</td><td data-l="upstream">Energy and Mines quarries site KMZ (2026-08-13)</td><td data-l="status">BUNDLED</td><td data-l="use / reasoning">1,340 true boundary polygons; TEN overlap check and the regression anchor's ground truth</td></tr>
+<tr><td data-l="file">flood_extents.geojson</td><td data-l="upstream">AGOL Flood_Risk_Extents, envelope snapshot (2026-08-13)</td><td data-l="status">BUNDLED</td><td data-l="use / reasoning">357 study-area bounding envelopes with study names and report URLs; conservative by design (a hit means a study exists in the vicinity, never a false clear). Full extents remain authoritative with Water Resources</td></tr>
 <tr><td data-l="file">nad27_shift.json</td><td data-l="upstream">derived from the NRCan NTv2 grid (0.5° lattice)</td><td data-l="status">BUNDLED</td><td data-l="use / reasoning">the datum correction itself; &lt;1 m interpolation error, validated against permit 151600 and 1,113-permit province-wide matching</td></tr>
 </tbody></table>
 <p>Snapshots carry dates; anything older than 180 days trips a stale banner.</p>

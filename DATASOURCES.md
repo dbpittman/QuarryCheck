@@ -110,7 +110,7 @@ screening value, then the notable omissions.
 | Intakes_and_Wellheads/0 | intake/wellhead points | LIVE `intakes` | Water Resources referral |
 | Water_Rights/0 | licensed water rights | LIVE `water_rights` | same |
 | Natural_Drainage_Outside_Protected_Area/0 | drainage designations | LIVE `nat_drain` | same |
-| Flood_Risk_Extents/0 | mapped flood extents | LIVE `flood` | same |
+| Flood_Risk_Extents/0 | mapped flood extents | RETIRED from live use | spatial queries take 18–30 s server-side (huge floodplain polygons), longer than the retry budget; replaced by a bundled envelope snapshot (§4) |
 
 ### Wetland / land cover
 
@@ -181,7 +181,7 @@ only; attribute schemas for the nine newest additions are unconfirmed
 | 13/14 Indigenous 1 / Indigenous 2 | island-side Indigenous areas (apparent) | CANDIDATE | semantics unknown (possibly reserve or asserted-interest areas); Labrador consultation is handled, island-side is not — verify in browser and wire if real |
 | 15–17, 19–21, 23–24 Water Resources / Service NL / T&I / Parks / Natural Areas / Other / Lands / Municipal Affairs | departmental interest areas | OMITTED (17 CANDIDATE) | duplicative of existing dedicated checks, except 17 Transportation and Infrastructure, which could ground the highway-access advisory in mapped data |
 | 26 Aquaculture | aquaculture interest areas | OMITTED | marginal for quarries; revisit for coastal sites |
-| 31–35 Flood Risk | flood extents | OMITTED | AGOL Flood_Risk_Extents already queried |
+| 31–35 Flood Risk | flood extents | OMITTED | flood is screened from the bundled envelope snapshot (§4) |
 | 36, 41 Admin boundaries, Places | reference | OMITTED | no bearing |
 
 The same host's **NLImagery** tile service is one of the four basemaps.
@@ -197,6 +197,7 @@ The same host's **NLImagery** tile service is one of the four basemaps.
 | no_permit_areas.geojson | Energy and Mines quarries site KMZ (2026-08-13) | BUNDLED | NPA cross-check against the live layer; live layer already ahead of it (6 vs 5 areas) |
 | qmels.geojson | Energy and Mines quarries site KMZ (dated 2024-10-25) | BUNDLED (STALE) | retained only as cross-check under a stale banner; live QMEL layer is current |
 | quarry_tenure_snapshot.geojson | Energy and Mines quarries site KMZ (2026-08-13) | BUNDLED | 1,340 true boundary polygons; TEN overlap check and the regression anchor's ground truth |
+| flood_extents.geojson | AGOL Flood_Risk_Extents, envelope snapshot (2026-08-13) | BUNDLED | 357 study-area bounding envelopes with study names and report URLs; conservative by design (a hit means a study exists in the vicinity, never a false clear). Full extents remain authoritative with Water Resources |
 | nad27_shift.json | derived from the NRCan NTv2 grid (0.5° lattice) | BUNDLED | the datum correction itself; <1 m interpolation error, validated against permit 151600 and 1,113-permit province-wide matching |
 
 Snapshots carry dates; anything older than 180 days trips a stale banner.
