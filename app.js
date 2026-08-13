@@ -126,8 +126,8 @@ const BUNDLED = [
     authority:'Municipal Affairs KMZ, snapshot 2026-08-11', note:'Building control areas (corridor polygons) along protected roads' },
   { id:'no_permit_areas', accuracy:10, nameFields:['name'], path:'data/no_permit_areas.geojson', queryDist:200, snapshot:'2026-08-13',
     authority:'Energy and Mines (formerly IET) quarries site KMZ, snapshot 2026-08-13', note:'No Permits Available areas, s.5 Quarry Materials Regulations (5 designated areas). Listing is province-described work-in-progress; absence of a polygon is not proof none exists.' },
-  { id:'qmels', accuracy:10, nameFields:['name'], path:'data/qmels.geojson', queryDist:500, snapshot:'2024-10-25',
-    authority:'Energy and Mines (formerly IET) quarries site KMZ, dated 2024-10-25 (STALE: many licences since expired or issued)', note:'Quarry Materials Exploration Licences' },
+  { id:'qmels', accuracy:10, nameFields:['name'], path:'data/qmels.geojson', queryDist:500, snapshot:'2024-10-25', latestPublished:true,
+    authority:'Energy and Mines (formerly IET) quarries site KMZ, dated 2024-10-25 — the department\'s most recent published file; the live QMEL layer is primary and governs', note:'Quarry Materials Exploration Licences (snapshot cross-check)' },
   { id:'flood', accuracy:10, nameFields:['name'], path:'data/flood_extents.geojson', queryDist:1000, snapshot:'2026-08-13',
     authority:'Water Resources flood mapping (AGOL Flood_Risk_Extents), envelope snapshot 2026-08-13', note:'Flood risk study area envelopes (357). Envelopes are conservative: a hit means a study area exists in this vicinity, not that the boundary lies in a mapped flood zone. The live layer answers spatial queries in 18-30 s and was retired from screen-time use; authoritative extents remain with Water Resources.' },
   { id:'q_snapshot', accuracy:5, nameFields:['name'], path:'data/quarry_tenure_snapshot.geojson', queryDist:500, snapshot:'2026-08-13',
@@ -975,7 +975,7 @@ async function runScreen(boundary, fetchFn, onProgress, opts) {
                  zone: h.feature.properties.zone, queried: h.queried }));
   const snapshotWarnings = Object.values(results)
     .filter(r => r && r.ok && r.src && r.src.snapshot)
-    .map(r => ({ id: r.id, note: r.src.note, snapshot: r.src.snapshot, ageDays: r.snapshotAgeDays, stale: r.stale }))
+    .map(r => ({ id: r.id, note: r.src.note, snapshot: r.src.snapshot, ageDays: r.snapshotAgeDays, stale: r.stale, latestPublished: !!r.src.latestPublished }))
     .sort((a, b) => b.ageDays - a.ageDays);
   return { verdict: overallVerdict(g), g, e, referrals, monuments, results, datumSentinel: datumSentinelStatus(), snapshotWarnings, ranAt: new Date().toISOString() };
 }

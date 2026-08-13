@@ -195,7 +195,7 @@ The same host's **NLImagery** tile service is one of the four basemaps.
 | protected_roads.geojson | Municipal Affairs KMZ (2026-08-11) | BUNDLED | 429 protected roads / 853 polygons; G3 protected-road identification where the live PRZ layer is thin |
 | building_control.geojson | Municipal Affairs KMZ (2026-08-11) | BUNDLED | G4 corridor polygons; overlap reported as containment, never "line 0 m away" |
 | no_permit_areas.geojson | Energy and Mines quarries site KMZ (2026-08-13) | BUNDLED | NPA cross-check against the live layer; live layer already ahead of it (6 vs 5 areas) |
-| qmels.geojson | Energy and Mines quarries site KMZ (dated 2024-10-25) | BUNDLED (STALE) | retained only as cross-check under a stale banner; live QMEL layer is current |
+| qmels.geojson | Energy and Mines quarries site KMZ (dated 2024-10-25) | BUNDLED | the department's most recent published QMEL file, per the department; reports state the date and that the live QMEL layer is primary and governs |
 | quarry_tenure_snapshot.geojson | Energy and Mines quarries site KMZ (2026-08-13) | BUNDLED | 1,340 true boundary polygons; TEN overlap check and the regression anchor's ground truth |
 | flood_extents.geojson | AGOL Flood_Risk_Extents, envelope snapshot (2026-08-13) | BUNDLED | 357 study-area bounding envelopes with study names and report URLs; conservative by design (a hit means a study exists in the vicinity, never a false clear). Full extents remain authoritative with Water Resources |
 | nad27_shift.json | derived from the NRCan NTv2 grid (0.5° lattice) | BUNDLED | the datum correction itself; <1 m interpolation error, validated against permit 151600 and 1,113-permit province-wide matching |

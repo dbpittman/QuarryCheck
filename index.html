@@ -950,9 +950,11 @@ function render(out, meta){
 
   h += '</section><section class="rpt"><h2>Datum audit</h2><p class="note">Reference frame: NAD83(CSRS), the provincial survey datum realized by the NL Geodetic Network. What each source\'s coordinates actually are, how that was verified, and what was done about it:</p>';
   { const sw = out.snapshotWarnings || [];
-    const staleList = sw.filter(w => w.stale);
+    const staleList = sw.filter(w => w.stale && !w.latestPublished);
+    const deptLatest = sw.filter(w => w.stale && w.latestPublished);
     if (staleList.length) h += `<p class="note" style="color:#b60;font-weight:600">STALE SNAPSHOTS: ${staleList.map(w => `${esc(w.note)} — ${w.snapshot} (${Math.round(w.ageDays/30)} months old)`).join('; ')}. Refresh these files (tools/kmz_to_geojson.py) before relying on their checks.</p>`;
-    else if (sw.length) h += `<p class="note">Bundled snapshots current: oldest is ${sw[0].snapshot} (${sw[0].ageDays} days).</p>`;
+    if (deptLatest.length) h += `<p class="note">${deptLatest.map(w => `${esc(w.note)}: the department's most recent published file is dated ${w.snapshot}; the live provincial layer is current and governs`).join('; ')}.</p>`;
+    if (!staleList.length && sw.length) h += `<p class="note">Bundled snapshots current: oldest is ${sw[0].snapshot} (${sw[0].ageDays} days).</p>`;
   }
   { const s = out.datumSentinel || { state: 'unchecked' };
     if (s.state === 'confirmed') h += `<p class="note" style="color:#2a7">Datum sentinel: CONFIRMED this run — the tenure server still serves permit 151600 at its pinned untransformed-NAD27 position (offset ${s.offsetMeters.toFixed(1)} m from reference). The NTv2 correction remains valid and was applied.</p>`;

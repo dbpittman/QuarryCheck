@@ -408,6 +408,16 @@ async function main() {
        `a known flood-study town trips the referral with envelope wording (${flS.features.length} envelope(s) in range)`);
   }
 
+  console.log('\n[17] QMEL snapshot: department-latest, not tool-stale');
+  {
+    const q = app.BUNDLED.find(x => x.id === 'qmels');
+    ok(q.latestPublished === true, 'QMEL snapshot carries the latestPublished flag');
+    ok(!/STALE/.test(q.authority) && /most recent published/.test(q.authority),
+       'authority string attributes the age to the department, not the tool');
+    const r = await app.loadBundled(q, boundary, fetchFn);
+    ok(r.stale === true, 'age computation is unchanged: the file is still old and says so');
+  }
+
   console.log(`\n${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
 }
