@@ -46,8 +46,8 @@ const SOURCES = [
   { id:'topo_wpoly', datum:'nad27null',     url:`${DNR}/Topographic/MapServer/13/query`, queryDist:300, nameFields:['OBJECTID'], authority:'dnrmaps (1:50k NTS topo)', note:'Waterbody polygons (1:50k)' },
 
   // G6 wetland (Non-Forest polygons carrying NFCODE)
-  { id:'nonforest_isl',  url:`${AGOL}/FFA_LandCover/FeatureServer/7/query`,  queryDist:200, where:"NFCODE IN ('BOG','SB','RB')", nameFields:['NFCODE'], authority:'GNL ArcGIS Online (FFA forestry inventory)', note:'Non-forest classes (island)' },
-  { id:'nonforest_lb',   url:`${AGOL}/FFA_LandCover_LB/FeatureServer/5/query`, queryDist:200, where:"NFCODE IN ('BOG','SB','RB')", nameFields:['NFCODE'], authority:'GNL ArcGIS Online (FFA forestry inventory)', note:'Non-forest classes (Labrador)' },
+  { id:'nonforest_isl',  url:`${AGOL}/FFA_LandCover/FeatureServer/7/query`,  queryDist:200, where:"NFCODE IN ('BOG','WBOG','TBOG')", nameFields:['NFCODE'], authority:'GNL ArcGIS Online (FFA forestry inventory)', note:'Wetland classes: Bog, Wet Bog, Treed Bog (island)' },
+  { id:'nonforest_lb',   url:`${AGOL}/FFA_LandCover_LB/FeatureServer/5/query`, queryDist:200, where:"NFCODE IN ('BOG','WBOG','TBOG')", nameFields:['NFCODE'], authority:'GNL ArcGIS Online (FFA forestry inventory)', note:'Wetland classes: Bog, Wet Bog, Treed Bog (Labrador)' },
 
   // E2/E6 quarry tenure (dnrmaps authoritative)
   { id:'q_apps', datum:'nad27null',         url:`${DNR}/Mineral_Lands/MapServer/6/query`, queryDist:500, nameFields:['COMPANY','FILENUMBER','PERMIT_ID'], authority:'dnrmaps (live tenure database)', note:'Quarry applications (point locations)' },
@@ -61,15 +61,15 @@ const SOURCES = [
   { id:'min_tenure', datum:'nad27null',     url:`${DNR}/Mineral_Lands/MapServer/5/query`, queryDist:200, nameFields:['TENURE_ID','CLIENT','OBJECTID'], authority:'dnrmaps (live tenure database)', note:'Mineral tenure' },
 
   // Land_Use referral layers (dnrmaps)
-  { id:'lu_protected',   url:`${DNR}/Land_Use/MapServer/0/query`, queryDist:100, nameFields:['NAME','AREA_NAME','OBJECTID'], authority:'dnrmaps', note:'Protected Areas Plan 2020' },
-  { id:'lu_specified',   url:`${DNR}/Land_Use/MapServer/1/query`, queryDist:100, nameFields:['NAME','OBJECTID'], authority:'dnrmaps', note:'Specified material lands' },
-  { id:'lu_lil',         url:`${DNR}/Land_Use/MapServer/2/query`, queryDist:100, nameFields:['NAME','OBJECTID'], authority:'dnrmaps', note:'Labrador Inuit Lands' },
-  { id:'lu_lisa',        url:`${DNR}/Land_Use/MapServer/3/query`, queryDist:100, nameFields:['NAME','OBJECTID'], authority:'dnrmaps', note:'Labrador Inuit Settlement Area' },
-  { id:'lu_cpcad',       url:`${DNR}/Land_Use/MapServer/4/query`, queryDist:100, nameFields:['NAME','OBJECTID'], authority:'dnrmaps', note:'Canadian protected/conserved areas' },
-  { id:'lu_pws',         url:`${DNR}/Land_Use/MapServer/5/query`, queryDist:100, nameFields:['NAME','PWS_NAME','OBJECTID'], authority:'dnrmaps', note:'Public water supplies' },
-  { id:'lu_municipal',   url:`${DNR}/Land_Use/MapServer/6/query`, queryDist:100, nameFields:['NAME','MUNICIPALI','OBJECTID'], authority:'dnrmaps', note:'Municipal boundaries' },
-  { id:'lu_planning',    url:`${DNR}/Land_Use/MapServer/7/query`, queryDist:100, nameFields:['MUNICIPALI','OBJECTID'], authority:'dnrmaps', note:'Planning areas (MPAB_LINK to plan)' },
-  { id:'lu_wind',        url:`${DNR}/Land_Use/MapServer/8/query`, queryDist:100, nameFields:['NAME','OBJECTID'], authority:'dnrmaps', note:'Wind energy land reserve' },
+  { id:'lu_protected',   datum:'nad27null', url:`${DNR}/Land_Use/MapServer/0/query`, queryDist:200, nameFields:['NAME','AREA_NAME','OBJECTID'], authority:'dnrmaps', note:'Protected Areas Plan 2020' },
+  { id:'lu_specified',   datum:'nad27null', url:`${DNR}/Land_Use/MapServer/1/query`, queryDist:200, nameFields:['NAME','OBJECTID'], authority:'dnrmaps', note:'Specified material lands' },
+  { id:'lu_lil',         datum:'nad27null', url:`${DNR}/Land_Use/MapServer/2/query`, queryDist:200, nameFields:['NAME','OBJECTID'], authority:'dnrmaps', note:'Labrador Inuit Lands' },
+  { id:'lu_lisa',        datum:'nad27null', url:`${DNR}/Land_Use/MapServer/3/query`, queryDist:200, nameFields:['NAME','OBJECTID'], authority:'dnrmaps', note:'Labrador Inuit Settlement Area' },
+  { id:'lu_cpcad',       datum:'nad27null', url:`${DNR}/Land_Use/MapServer/4/query`, queryDist:200, nameFields:['NAME','OBJECTID'], authority:'dnrmaps', note:'Canadian protected/conserved areas' },
+  { id:'lu_pws',         datum:'nad27null', url:`${DNR}/Land_Use/MapServer/5/query`, queryDist:200, nameFields:['NAME','PWS_NAME','OBJECTID'], authority:'dnrmaps', note:'Public water supplies' },
+  { id:'lu_municipal',   datum:'nad27null', url:`${DNR}/Land_Use/MapServer/6/query`, queryDist:200, nameFields:['NAME','MUNICIPALI','OBJECTID'], authority:'dnrmaps', note:'Municipal boundaries' },
+  { id:'lu_planning',    datum:'nad27null', url:`${DNR}/Land_Use/MapServer/7/query`, queryDist:200, nameFields:['MUNICIPALI','OBJECTID'], authority:'dnrmaps', note:'Planning areas (MPAB_LINK to plan)' },
+  { id:'lu_wind',        datum:'nad27null', url:`${DNR}/Land_Use/MapServer/8/query`, queryDist:200, nameFields:['NAME','OBJECTID'], authority:'dnrmaps', note:'Wind energy land reserve' },
 
   // Water Resources (AGOL is authoritative for these; WRMD publisher)
   { id:'pwsa',           url:`${AGOL}/Public_Water_Supply_Areas/FeatureServer/0/query`, queryDist:100, nameFields:['NAME','PWS_NAME','OBJECTID'], authority:'GNL ArcGIS Online (WRMD)', note:'Public water supply areas' },
@@ -96,15 +96,15 @@ const NLGN_SOURCE = { id:'nlgn', url:`${AGOL}/Control_Monuments_Public/FeatureSe
 
 /* Bundled snapshots (no live source exists / hand-maintained upstream) */
 const BUNDLED = [
-  { id:'protected_roads', path:'data/protected_roads.geojson', queryDist:200,
+  { id:'protected_roads', path:'data/protected_roads.geojson', queryDist:200, snapshot:'2026-08-11',
     authority:'Municipal Affairs KMZ, snapshot 2026-08-11', note:'Protected Road zoning polygons (429 roads, 853 polygons)' },
-  { id:'building_control', path:'data/building_control.geojson', queryDist:200,
+  { id:'building_control', path:'data/building_control.geojson', queryDist:200, snapshot:'2026-08-11',
     authority:'Municipal Affairs KMZ, snapshot 2026-08-11', note:'Building control areas (corridor polygons) along protected roads' },
-  { id:'no_permit_areas', path:'data/no_permit_areas.geojson', queryDist:200,
+  { id:'no_permit_areas', path:'data/no_permit_areas.geojson', queryDist:200, snapshot:'2026-08-13',
     authority:'IET quarries site KMZ, snapshot 2026-08-13', note:'No Permits Available areas, s.5 Quarry Materials Regulations (5 designated areas). Listing is province-described work-in-progress; absence of a polygon is not proof none exists.' },
-  { id:'qmels', path:'data/qmels.geojson', queryDist:500,
+  { id:'qmels', path:'data/qmels.geojson', queryDist:500, snapshot:'2024-10-25',
     authority:'IET quarries site KMZ, dated 2024-10-25 (STALE: many licences since expired or issued)', note:'Quarry Materials Exploration Licences' },
-  { id:'q_snapshot', path:'data/quarry_tenure_snapshot.geojson', queryDist:500,
+  { id:'q_snapshot', path:'data/quarry_tenure_snapshot.geojson', queryDist:500, snapshot:'2026-08-13',
     authority:'IET quarries site KMZ, snapshot 2026-08-13; datum-verified against permit 151600 (104.7 m to Route 470 vs ~100 m ground truth, area 2.00 ha exact)', note:'Quarry permit/lease boundary polygons (1,340)' },
 ];
 
@@ -352,7 +352,12 @@ async function loadBundled(src, boundary, fetchFn) {
         return minDistanceMeters(boundary, f) <= src.queryDist;
       } catch (e) { return false; }
     });
-    return { id: src.id, ok: true, features, queried: started.toISOString(), src };
+    let snapshotAgeDays = null, stale = false;
+    if (src.snapshot) {
+      snapshotAgeDays = Math.round((started - new Date(src.snapshot)) / 86400000);
+      stale = snapshotAgeDays > 180;
+    }
+    return { id: src.id, ok: true, features, queried: started.toISOString(), src, snapshotAgeDays, stale };
   } catch (e) {
     return { id: src.id, ok: false, error: String(e.message || e), queried: started.toISOString(), src,
              missing: !!src.optional };
@@ -543,18 +548,15 @@ function runSectionG(boundary, results) {
 
   { // G6 wetland 30 m
     const ids = ['nonforest_isl','nonforest_lb'];
-    const bogs = collectWithin(boundary, results, ids, 30).filter(h => h.feature.properties.NFCODE === 'BOG');
-    const maybe = collectWithin(boundary, results, ids, 30).filter(h => ['SB','RB'].includes(h.feature.properties.NFCODE));
-    const nAll = nearest(boundary, results, ids, f => `NFCODE ${f.properties.NFCODE}`);
-    let v = 'PASS';
-    if (bogs.length) v = 'ENCROACHES';
-    else if (maybe.length || failed(ids)) v = 'ADVISORY';
-    checks.push({ id:'G6', label:'30 m from a wetland', setback:30, verdict:v, nearest:nAll,
+    const BOG_LABEL = { BOG:'Bog', WBOG:'Wet Bog', TBOG:'Treed Bog' };
+    const nAll = nearest(boundary, results, ids,
+      f => BOG_LABEL[f.properties.NFCODE] || `NFCODE ${f.properties.NFCODE}`);
+    checks.push({ id:'G6', label:'30 m from a wetland', setback:30,
+      verdict: verdictFor(nAll, 30, failed(ids)), nearest: nAll,
       sources: sourceStatus(results, ids),
       notes: [
-        maybe.length ? `NFCODE ${[...new Set(maybe.map(h=>h.feature.properties.NFCODE))].join(', ')} polygon(s) within 30 m; legend confirmation pending on whether these classes are wetland.` : null,
-        'Definitive for mapped BOG polygons only. The forestry inventory misses small marshes and treed wetlands.',
-      ].filter(Boolean) });
+        'Screened against the forestry inventory\'s wetland classes: Bog, Wet Bog, Treed Bog (per the layer\'s published NFCODE domain). Soil Barren and Rock Barren are dry-ground classes, not wetlands, and are excluded. The inventory can miss small marshes and fens; confirm on site.',
+      ] });
   }
 
   { // No Permits Available areas (s.5) — not a Section G item but application-fatal
@@ -585,34 +587,42 @@ function waterName(f) {
 function runSectionE(boundary, results) {
   const T = getTurf();
   const e = [];
+  /* Outage gate: a copy-onto-the-form answer must never assert absence when
+     the sources that would have shown presence did not respond. */
+  const gateE = (ids, hasHits, answer) => {
+    const failedS = sourceStatus(results, ids).filter(s => !s.ok);
+    if (!failedS.length) return { answer, unverifiable: false };
+    const names = failedS.map(s => s.note || s.id).join('; ');
+    if (!hasHits) return { unverifiable: true,
+      answer: `NOT SCREENABLE THIS RUN — required source(s) unreachable: ${names}. Do not answer “none” on the form from this report; re-run when the services respond.` };
+    return { unverifiable: false,
+      answer: answer + ` [Caveat: ${failedS.length} source(s) unreachable this run (${names}); this list may be incomplete.]` };
+  };
   const roadN = nearest(boundary, results, ['lu_roads_p','lu_roads_s','roads_nrn','road_tlh','road_cartwright']);
 
-  e.push({ id:'E1', q:'Is the site visible from nearby highways or main roads?',
-    answer: roadN
+  { const g = gateE(['lu_roads_p','lu_roads_s'], !!roadN, roadN
       ? `Nearest mapped road is ${fmt(roadN.dist)} away (${roadN.name}). Visibility depends on terrain and vegetation and is not computable from published data; assess on site. If visible, a Visibility Management Plan may be requested.`
-      : 'No mapped road within 1 km. Visibility unlikely but confirm on site.',
-    basis: roadN });
+      : 'No mapped road within 1 km. Visibility unlikely but confirm on site.');
+    e.push({ id:'E1', q:'Is the site visible from nearby highways or main roads?', answer: g.answer, unverifiable: g.unverifiable, basis: roadN }); }
 
   const qHits = collectWithin(boundary, results, ['q_apps','q_sub','q_permits','q_leases'], 100);
   const onSite = qHits.filter(h => h.dist === 0);
-  e.push({ id:'E2', q:'Is it an existing or historic quarry?',
-    answer: onSite.length
+  { const g = gateE(['q_apps','q_sub','q_permits','q_leases'], onSite.length > 0, onSite.length
       ? `Published tenure records intersect this boundary: ${onSite.map(h=>h.name).join('; ')}. If workings exist, face heights must be reported from site measurement.`
-      : 'No published quarry tenure intersects this boundary. If old workings are present on the ground, answer yes and measure face heights on site.',
-    basis: onSite[0] || null });
+      : 'No published quarry tenure intersects this boundary. If old workings are present on the ground, answer yes and measure face heights on site.');
+    e.push({ id:'E2', q:'Is it an existing or historic quarry?', answer: g.answer, unverifiable: g.unverifiable, basis: onSite[0] || null }); }
 
   const access = nearest(boundary, results, ['lu_roads_p','lu_roads_s','roads_nrn','res_roads_nf','res_roads_dnr','res_roads_lb','roads_dnr','road_tlh','road_cartwright']);
-  e.push({ id:'E3', q:'Is there existing access?',
-    answer: access
+  { const g = gateE(['lu_roads_p','lu_roads_s','res_roads_nf','res_roads_dnr','res_roads_lb'], !!access, access
       ? `Nearest mapped road or resource road is ${fmt(access.dist)} away (${access.name}). The application boundary file must include the access road.`
-      : 'No mapped access within 1 km. New access will need to be shown in the boundary file.',
-    basis: access });
+      : 'No mapped access within 1 km. New access will need to be shown in the boundary file.');
+    e.push({ id:'E3', q:'Is there existing access?', answer: g.answer, unverifiable: g.unverifiable, basis: access }); }
 
   const inBnd = collectWithin(boundary, results, ['bldg_bing','bldg_topo','tx_nalcor','tx_canvec'], 0);
   e.push({ id:'E4', q:'Are there structures within the boundary (fence, pole line, house)?',
-    answer: inBnd.length
+    ...gateE(['bldg_bing','bldg_topo','tx_nalcor','tx_canvec'], inBnd.length > 0, inBnd.length
       ? `Published data shows ${inBnd.length} structure/line feature(s) intersecting the boundary: ${inBnd.slice(0,6).map(h=>`${h.name} (${h.source})`).join('; ')}${inBnd.length>6?'; …':''}. Confirm on site; fences and small structures are not mapped.`
-      : 'No mapped structures or transmission lines intersect the boundary. Fences, pole lines and small structures are not reliably mapped; confirm on site.',
+      : 'No mapped structures or transmission lines intersect the boundary. Fences, pole lines and small structures are not reliably mapped; confirm on site.'),
     basis: inBnd[0] || null, list: inBnd });
 
   const wb200 = collectWithin(boundary, results, ['wbody_isl','wbody_lb','topo_wpoly'], 200)
@@ -626,8 +636,9 @@ function runSectionE(boundary, results) {
       + (wbClusters.length>8?`; and ${wbClusters.length-8} more`:'')
     : 'No ponds or lakes mapped within 200 m.';
   if (drainClusters.length) ans += ` Mapped drainage lines also appear within 200 m on provincial mapping (${drainClusters.length} distinct); [state whether these carry flow, from site knowledge].`;
+  { const g5 = gateE(['wbody_isl','wbody_lb','topo_wpoly'], wbClusters.length > 0, ans); ans = g5.answer; var _e5unv = g5.unverifiable; }
   e.push({ id:'E5', q:'Waterbodies within 200 m? (type, direction, distance)',
-    answer: ans,
+    answer: ans, unverifiable: (typeof _e5unv !== 'undefined') && _e5unv,
     basis: wbClusters[0] ? wbClusters[0].nearest : null, list: wb200,
     note: 'Itemized entries are lakes/ponds only. Mapped stream/drainage lines are summarized, not itemized; complete the bracketed statement from site knowledge before submitting.' });
 
@@ -638,9 +649,9 @@ function runSectionE(boundary, results) {
     ...collectWithin(boundary, results, ['q_apps','q_sub','q_permits','q_leases'], 300).map(h=>({...h,kind:'quarry tenure'})),
   ].sort((a,b)=>a.dist-b.dist);
   e.push({ id:'E6', q:'Land uses within 300 m? (roads, residences, cabins, transmission lines, other quarries, agriculture)',
-    answer: lu300.length
+    ...gateE(['lu_roads_p','lu_roads_s','bldg_bing','bldg_topo','tx_nalcor','tx_canvec','q_apps','q_sub','q_permits','q_leases'], lu300.length > 0, lu300.length
       ? lu300.slice(0,12).map(h => `${h.kind}: ${h.name}, ${h.dir}, ${fmt(h.dist)}`).join('; ') + (lu300.length>12?`; and ${lu300.length-12} more`:'')
-      : 'None mapped within 300 m.',
+      : 'None mapped within 300 m.'),
     basis: lu300[0] || null, list: lu300,
     note: 'Agriculture parcels have no queryable public layer; not screenable. Buildings are Bing-derived footprints plus 1:50k symbols; cabins are under-mapped.' });
 
@@ -648,12 +659,12 @@ function runSectionE(boundary, results) {
   // not a setback; no distance-based requirement is stated or implied.
   const st2k = collectWithin(boundary, results, ['bldg_bing','bldg_topo'], 2000);
   const in1k = st2k.filter(h => h.dist < 1000);
-  e.push({ id:'CTX', q:'Context: mapped structures near the boundary (not a form question)',
-    answer: (st2k.length
+  { const g = gateE(['bldg_bing','bldg_topo'], st2k.length > 0, (st2k.length
       ? `${in1k.length} mapped structure(s) within 1,000 m; ${st2k.length - in1k.length} more between 1,000 m and 2 km${st2k.length>=250?' (counts truncated at fetch cap)':''}. Nearest: ${st2k[0].name} (${st2k[0].source}), ${st2k[0].dir}, ${fmt(st2k[0].dist)}.`
       : 'No mapped structures within 2 km.')
-      + ' CAUTION: building data is Bing-derived plus 1:50k symbols and is demonstrably incomplete (unmapped cabins and pole lines confirmed at a real site); an empty result does not mean no structures exist. Field verification governs.',
-    basis: st2k[0] || null });
+      + ' CAUTION: building data is Bing-derived plus 1:50k symbols and is demonstrably incomplete (unmapped cabins and pole lines confirmed at a real site); an empty result does not mean no structures exist. Field verification governs.');
+    e.push({ id:'CTX', q:'Context: mapped structures near the boundary (not a form question)',
+      answer: g.answer, unverifiable: g.unverifiable, basis: st2k[0] || null }); }
 
   return e;
 }
@@ -718,6 +729,10 @@ function fmt(m) {
 }
 
 function overallVerdict(gChecks) {
+  const dead = gChecks.filter(c => c.sources && c.sources.length && c.sources.every(s => !s.ok));
+  if (dead.length === gChecks.length && gChecks.length) return { level:'UNVERIFIABLE',
+    text:'Screening could not be completed — sources unreachable.',
+    detail:'Every check\'s data sources failed to respond this run. No verdict here means anything; re-run when services are available.' };
   const enc = gChecks.filter(c => c.verdict === 'ENCROACHES');
   if (enc.length) return { level:'FAIL',
     text:'This boundary would not be accepted as submitted.',
@@ -747,7 +762,11 @@ async function runScreen(boundary, fetchFn, onProgress) {
                  elev: h.feature.properties.elev, adj_date: h.feature.properties.adj_date,
                  east: h.feature.properties.east, north: h.feature.properties.north,
                  zone: h.feature.properties.zone, queried: h.queried }));
-  return { verdict: overallVerdict(g), g, e, referrals, monuments, results, datumSentinel: datumSentinelStatus(), ranAt: new Date().toISOString() };
+  const snapshotWarnings = Object.values(results)
+    .filter(r => r && r.ok && r.src && r.src.snapshot)
+    .map(r => ({ id: r.id, note: r.src.note, snapshot: r.src.snapshot, ageDays: r.snapshotAgeDays, stale: r.stale }))
+    .sort((a, b) => b.ageDays - a.ageDays);
+  return { verdict: overallVerdict(g), g, e, referrals, monuments, results, datumSentinel: datumSentinelStatus(), snapshotWarnings, ranAt: new Date().toISOString() };
 }
 
 /* Datum audit: what each source's coordinates actually are, and how we know.
@@ -760,7 +779,7 @@ const DATUM_AUDIT = [
   { group:'Land Use Atlas roads (Primary/Secondary, layers 39/40)', claimed:'WGS84 (served)', verified:'Owner-verified against NLImagery/Esri orthos at two sites (2026-08-12): linework sits on the pavement', action:'primary G3 source', residual:'~5-10 m (visual)' },
   { group:'dnrmaps roads (Detailed Road Network)', claimed:'WGS84 (served)', verified:'Datum correct (ground-truthed at permit 151600) but 2008-vintage: offset/stale where roads realigned since, found at two sites', action:'DEMOTED - context only, no G3 verdicts', residual:'metres to tens of metres where realigned' },
   { group:'AGOL layers (water, landcover, WRMD, roads subsets)', claimed:'Web Mercator native', verified:'Hosted NAD83-family services; landcover/hydro consistent with corrected and ground-truthed layers', action:'none needed', residual:'~10-25 m (photogrammetric inventory)' },
-  { group:'dnrmaps Land_Use (municipal, planning, PWS, LIL/LISA)', claimed:'WGS84 (served)', verified:'NOT YET VERIFIED - no ground-truth anchor tested', action:'none; treat 100 m-threshold results as +/-75 m until verified', residual:'unknown' },
+  { group:'dnrmaps Land_Use (municipal, planning, PWS, LIL/LISA)', claimed:'WGS84 (served)', verified:'573 identical PWS watershed polygons matched against the NAD83-native AGOL copy: median offset +66.7 m E (IQR 61-72), 0% within 30 m as served - the NTv2 signature; third dnrmaps service proven NAD27-null', action:'NTv2 shift applied client-side; query distance widened 100->200 m', residual:'~5-15 m after correction' },
   { group:'Protected Roads / Building Control KMZs', claimed:'WGS84 (KML spec)', verified:'Not independently anchored; Municipal Affairs export', action:'none', residual:'unknown, assumed ~10-30 m' },
   { group:'NL Geodetic Network monuments', claimed:'NAD83(CSRS)', verified:'IS the provincial survey base; published by Geodetic Surveys', action:'reference layer', residual:'survey-grade' },
 ];

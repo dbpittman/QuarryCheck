@@ -89,12 +89,22 @@ bbox adjustment of export requests.
   ground-truthed at permit 151600: measured 104.7 m to Route 470 vs ~100 m
   ground truth) — but see vintage note below.
 
-### Unverified
+### dnrmaps Land_Use — third service proven NAD27-null
 
-- **Land_Use layers** (municipal, planning, protected water supplies,
-  LIL/LISA): datum unverified; given the server pattern, NAD27-null is
-  suspected but no anchor has been tested. Results near 100 m thresholds
-  should be treated as ±75 m until resolved.
+The Land_Use service's own published spatial reference is `NF_GNL1_NAD27`.
+Its WGS84 export was tested by matching 573 identical Public Water Supply
+watershed polygons (joined on WS_NUM) against the NAD83-native copy of the
+same dataset on the GNL ArcGIS Online host: median offset **+66.7 m E**
+(IQR 61–72 m), 0% of pairs within 30 m as served — the NTv2 signature, on
+both the island (n=542, +66.8 m) and Labrador (n=31, +62.5 m). All nine
+Land_Use referral layers (municipal boundaries, planning areas, PWS,
+protected areas, LIL/LISA, wind reserve, specified material lands) now carry
+the NTv2 correction, with query distances widened 100→200 m.
+
+Three independent dnrmaps services (Mineral_Lands, Topographic, Land_Use)
+are now proven or shown to serve untransformed NAD27 as WGS84 — a
+server-pipeline defect, not a per-layer accident. The Land Use Atlas road
+layers on the Crown Lands host remain the verified exception.
 
 ## Road source selection
 
@@ -146,6 +156,28 @@ lines. A site overlapping a corridor therefore correctly measures 0 m; the
 report states this as "boundary lies within the mapped building control area"
 rather than a misleading "line 0 m away". Corridor extents are as mapped by
 Municipal Affairs and are not survey-anchored.
+
+## Wetland screening (G6) — NFCODE legend confirmed
+
+The FFA_LandCover layers publish a coded-value domain for NFCODE
+(`NonForestCode`). Wetland classes are **BOG (Bog), WBOG (Wet Bog), TBOG
+(Treed Bog)**; **SB is Soil Barren and RB is Rock Barren** — dry-ground
+classes, not wetlands. G6 accordingly screens all three bog classes as
+definitive (the original BOG-only query silently missed Wet Bog and Treed
+Bog) and excludes the barrens, ending the earlier SB/RB advisory. The
+inventory can miss small marshes and fens; reports say so.
+
+## Outage behavior
+
+A failed source can never produce a clean answer. Section G verdicts degrade
+to ADVISORY when any required source fails; Section E answers are gated so a
+copy-onto-the-form answer never asserts absence when the sources that would
+have shown presence did not respond (the answer is replaced with NOT
+SCREENABLE and the copy button suppressed); a total blackout returns an
+UNVERIFIABLE overall verdict rather than a pass of any kind. Bundled
+snapshots carry machine-readable dates; any snapshot older than 180 days
+triggers a stale-data banner in the report (QMELs currently trip it by
+design).
 
 ## Bundled snapshots (/data)
 

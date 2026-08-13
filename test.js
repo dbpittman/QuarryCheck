@@ -138,6 +138,36 @@ async function main() {
     }
   }
 
+  console.log('\n[7] outage behavior (total blackout)');
+  {
+    const dead = () => Promise.reject(new Error('simulated outage'));
+    const out = await app.runScreen(boundary, dead);
+    ok(out.verdict.level === 'UNVERIFIABLE', `overall verdict = ${out.verdict.level}`);
+    ok(out.g.every(c => c.verdict !== 'PASS'), 'no G check reads PASS during blackout');
+    const ungated = out.e.filter(e => /No mapped|None mapped|No published|No ponds/.test(e.answer) && !e.unverifiable);
+    ok(ungated.length === 0, `no E answer asserts absence ungated (${ungated.length})`);
+    ok(out.e.some(e => e.unverifiable), 'E answers carry the unverifiable flag');
+  }
+
+  console.log('\n[8] G6 wetland classes (confirmed NFCODE legend)');
+  {
+    for (const id of ['nonforest_isl','nonforest_lb']) {
+      const src = app.SOURCES.find(s => s.id === id);
+      ok(/'BOG','WBOG','TBOG'/.test(src.where), `${id} screens Bog/Wet Bog/Treed Bog`);
+      ok(!/'SB'|'RB'/.test(src.where), `${id} excludes Soil/Rock Barren (dry ground)`);
+    }
+  }
+
+  console.log('\n[9] Land_Use datum + snapshot ages');
+  {
+    const luIds = ['lu_protected','lu_specified','lu_lil','lu_lisa','lu_cpcad','lu_pws','lu_municipal','lu_planning','lu_wind'];
+    const flagged = luIds.filter(id => (app.SOURCES.find(s => s.id === id) || {}).datum === 'nad27null');
+    ok(flagged.length === luIds.length, `all ${luIds.length} Land_Use sources datum-corrected (proven +66.7 m E vs AGOL twin)`);
+    ok(app.BUNDLED.every(s => s.snapshot), 'every bundled source carries a snapshot date');
+    const q = await app.loadBundled(app.BUNDLED.find(s => s.id === 'qmels'), boundary, fetchFn);
+    ok(q.ok && q.snapshotAgeDays > 180 && q.stale === true, `qmels correctly flagged stale (${q.snapshotAgeDays} days)`);
+  }
+
   console.log(`\n${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
 }

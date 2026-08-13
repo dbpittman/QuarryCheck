@@ -40,6 +40,7 @@ header .sub a{color:var(--link)}
 .stamp.FAIL{border-color:var(--fail);color:var(--fail);background:#FBF1F0}
 .stamp.PASS{border-color:var(--pass);color:var(--pass);background:#F0F7F2}
 .stamp.PASS_WITH_ADVISORIES{border-color:var(--adv);color:var(--adv);background:#FBF6EC}
+.stamp.UNVERIFIABLE{border-color:#777;color:#555;background:#F2F2F0}
 .stamp.RUNNING{border-color:var(--ink);color:var(--ink);background:#fff;display:block}
 .stamp.RUNNING .lvl::after{content:"";display:inline-block;width:1ch;animation:dots 1.2s steps(4) infinite}
 @keyframes dots{0%{content:""}25%{content:"."}50%{content:".."}75%{content:"..."}}
@@ -636,7 +637,7 @@ function render(out, meta){
 
   h += '<section class="rpt"><h2>Section E — Questions <span class="copyhint">(verify anything marked for site confirmation)</span></h2>';
   for (const e of out.e) {
-    h += `<div class="eahead"><p class="eq">${e.id}. ${esc(e.q)}</p><button class="copybtn" data-copy="${esc(e.answer)}">copy</button></div><div class="ea">${esc(e.answer)}</div>`;
+    h += `<div class="eahead"><p class="eq">${e.id}. ${esc(e.q)}</p>${e.unverifiable ? '' : `<button class="copybtn" data-copy="${esc(e.answer)}">copy</button>`}</div><div class="ea"${e.unverifiable ? ' style="color:#c33;font-weight:600"' : ''}>${esc(e.answer)}</div>`;
     if (e.note) h += `<div class="note">${esc(e.note)}</div>`;
   }
   h += '</section>';
@@ -678,6 +679,11 @@ function render(out, meta){
   }
 
   h += '</section><section class="rpt"><h2>Datum audit</h2><p class="note">Reference frame: NAD83(CSRS), the provincial survey datum realized by the NL Geodetic Network. What each source\'s coordinates actually are, how that was verified, and what was done about it:</p>';
+  { const sw = out.snapshotWarnings || [];
+    const staleList = sw.filter(w => w.stale);
+    if (staleList.length) h += `<p class="note" style="color:#b60;font-weight:600">STALE SNAPSHOTS: ${staleList.map(w => `${esc(w.note)} — ${w.snapshot} (${Math.round(w.ageDays/30)} months old)`).join('; ')}. Refresh these files (tools/kmz_to_geojson.py) before relying on their checks.</p>`;
+    else if (sw.length) h += `<p class="note">Bundled snapshots current: oldest is ${sw[0].snapshot} (${sw[0].ageDays} days).</p>`;
+  }
   { const s = out.datumSentinel || { state: 'unchecked' };
     if (s.state === 'confirmed') h += `<p class="note" style="color:#2a7">Datum sentinel: CONFIRMED this run — the tenure server still serves permit 151600 at its pinned untransformed-NAD27 position (offset ${s.offsetMeters.toFixed(1)} m from reference). The NTv2 correction remains valid and was applied.</p>`;
     else if (s.state === 'tripped') h += `<p class="note" style="color:#c33;font-weight:600">DATUM SENTINEL TRIPPED: ${s.detail} All results from dnrmaps tenure and 1:50k topo sources this run are uncorrected and their positions are unverified — treat distances from those sources as ±75 m until re-verified.</p>`;
