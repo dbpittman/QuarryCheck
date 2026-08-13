@@ -1,0 +1,696 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NL Quarry Pre-Screen</title>
+<meta name="description" content="Runs the NL government's own quarry application acceptance test (Sections E and G) on a proposed boundary, against the province's published map data.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,400..800&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link href="vendor/maplibre-gl.css" rel="stylesheet">
+<style>
+:root{
+  --paper:#FAFAF8; --ink:#16181A; --rule:#D8D6CE; --dim:#5C5F58;
+  --pass:#1B7F4D; --fail:#B3261E; --adv:#96690F; --link:#2B5E8C;
+  --mono:'IBM Plex Mono',monospace; --sans:'Archivo',sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.5}
+.sheet{max-width:940px;margin:0 auto;padding:28px 20px 80px;border-left:1px solid var(--rule);border-right:1px solid var(--rule);min-height:100vh;position:relative}
+/* survey-sheet tick marks */
+.sheet::before,.sheet::after{content:"";position:absolute;top:0;bottom:0;width:8px;
+  background:repeating-linear-gradient(to bottom,transparent 0 118px,var(--rule) 118px 120px)}
+.sheet::before{left:-9px}.sheet::after{right:-9px}
+header h1{font-weight:800;font-stretch:80%;font-size:1.9rem;margin:0 0 2px;letter-spacing:-.01em}
+header .sub{color:var(--dim);font-size:.92rem;max-width:64ch}
+header .sub a{color:var(--link)}
+.rulebar{font-family:var(--mono);font-size:.75rem;color:var(--dim);border-top:2px solid var(--ink);border-bottom:1px solid var(--rule);padding:6px 0;margin:14px 0 22px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+#drop{border:2px dashed var(--rule);padding:38px 20px;text-align:center;cursor:pointer;transition:border-color .15s;background:#fff}
+#drop.on{border-color:var(--link)}
+#drop p{margin:4px 0}
+#drop .big{font-weight:600;font-size:1.05rem}
+#drop .small{color:var(--dim);font-size:.85rem}
+#mapbar{display:none;gap:6px;flex-wrap:wrap;margin:18px 0 0;border:1px solid var(--rule);border-bottom:0;background:#fff;padding:8px 10px}
+#mapbar button{font-family:var(--mono);font-size:.72rem;padding:5px 10px;background:var(--paper);border:1px solid var(--rule);cursor:pointer}
+#mapbar button:hover{border-color:var(--ink)}
+#map{height:760px;margin-top:0!important;border:1px solid var(--rule);margin:18px 0;display:none}
+.stamp{display:none;border:3px solid;padding:14px 18px;margin:20px 0;font-family:var(--mono)}
+.stamp .lvl{font-weight:600;font-size:1.05rem;text-transform:uppercase;letter-spacing:.04em}
+.stamp .dtl{font-size:.85rem;margin-top:6px;color:var(--ink)}
+.stamp.FAIL{border-color:var(--fail);color:var(--fail);background:#FBF1F0}
+.stamp.PASS{border-color:var(--pass);color:var(--pass);background:#F0F7F2}
+.stamp.PASS_WITH_ADVISORIES{border-color:var(--adv);color:var(--adv);background:#FBF6EC}
+.stamp.RUNNING{border-color:var(--ink);color:var(--ink);background:#fff;display:block}
+.stamp.RUNNING .lvl::after{content:"";display:inline-block;width:1ch;animation:dots 1.2s steps(4) infinite}
+@keyframes dots{0%{content:""}25%{content:"."}50%{content:".."}75%{content:"..."}}
+@media (prefers-reduced-motion: reduce){.stamp.RUNNING .lvl::after{animation:none;content:"..."}}
+#map.busy{opacity:.45;pointer-events:none;transition:opacity .2s}
+h2{font-weight:700;font-stretch:85%;font-size:1.15rem;border-bottom:2px solid var(--ink);padding-bottom:4px;margin:34px 0 12px}
+table{width:100%;border-collapse:collapse;font-size:.9rem}
+th{text-align:left;font-family:var(--mono);font-size:.72rem;font-weight:600;color:var(--dim);border-bottom:1px solid var(--rule);padding:6px 8px;text-transform:uppercase;letter-spacing:.05em}
+td{border-bottom:1px solid var(--rule);padding:8px;vertical-align:top}
+td.num,.mono{font-family:var(--mono)}
+.v{font-family:var(--mono);font-weight:700;font-size:.85rem;padding:4px 10px;white-space:nowrap;display:inline-block}
+.v.PASS{color:var(--pass);border:1px solid var(--pass)}
+.v.ENCROACHES{color:#fff;background:var(--fail)}
+.v.ADVISORY{color:var(--adv);border:1px solid var(--adv)}
+tr.rowENCROACHES{background:#FBF1F0}
+tr.rowADVISORY{background:#FBF6EC}
+.note{color:var(--dim);font-size:.82rem;margin-top:4px}
+details.srcd{margin-top:4px}
+details.srcd summary{font-family:var(--mono);font-size:.72rem;color:var(--dim);cursor:pointer;list-style:none}
+details.srcd summary::before{content:"+ "}
+details.srcd[open] summary::before{content:"− "}
+details.srcd .src{margin-top:2px}
+.copybtn{font-family:var(--mono);font-size:.68rem;padding:3px 8px;background:#fff;border:1px solid var(--rule);cursor:pointer;margin-left:8px;vertical-align:middle}
+.copybtn:active{background:var(--ink);color:#fff}
+.eahead{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+#maplegend{position:absolute;bottom:8px;left:8px;z-index:5;background:rgba(255,255,255,.93);border:1px solid var(--rule);padding:6px 10px;font-family:var(--mono);font-size:.66rem;line-height:1.7;display:none}
+#maplegend .sw{display:inline-block;width:10px;height:10px;margin-right:5px;vertical-align:-1px;border-radius:1px}
+#maplegend .swm{display:inline-block;width:8px;height:8px;margin-right:5px;vertical-align:-1px;border-radius:50%;background:#fff;border:2px solid #000}
+.src{font-family:var(--mono);font-size:.72rem;color:var(--dim)}
+.src .bad{color:var(--fail)}
+.attrs{margin:6px 0 0;border:1px solid var(--rule);background:#FCFCFA;font-family:var(--mono);font-size:.72rem;width:auto}
+.attrs td{padding:2px 8px;border-bottom:1px solid var(--rule)}
+.attrs td:first-child{color:var(--dim)}
+.eq{font-weight:600;margin:14px 0 2px}
+.ea{margin:0 0 4px;background:#fff;border:1px solid var(--rule);padding:10px 12px;font-size:.92rem}
+.copyhint{font-family:var(--mono);font-size:.7rem;color:var(--dim)}
+.ref{border:1px solid var(--rule);background:#fff;padding:12px 14px;margin:10px 0}
+.ref h3{margin:0 0 4px;font-size:.98rem}
+.ref .why{color:var(--dim);font-size:.85rem}
+.ref ul{margin:6px 0 0;padding-left:18px;font-size:.85rem}
+.ref a{color:var(--link)}
+.warnbox{border-left:4px solid var(--adv);background:#FBF6EC;padding:10px 12px;font-size:.85rem;margin:10px 0}
+#progress{font-family:var(--mono);font-size:.78rem;color:var(--dim);margin:12px 0;display:none;white-space:pre-wrap}
+#printbtn{display:none;font-family:var(--mono);font-size:.85rem;background:var(--ink);color:var(--paper);border:0;padding:10px 18px;cursor:pointer;margin:24px 0 0}
+footer{margin-top:48px;border-top:2px solid var(--ink);padding-top:10px;font-size:.78rem;color:var(--dim)}
+#err{display:none;border:2px solid var(--fail);color:var(--fail);padding:12px;margin:16px 0;font-size:.9rem}
+@media (max-width:700px){
+  .sheet{border:0;padding:16px 12px 60px}
+  .sheet::before,.sheet::after{display:none}
+  table.stack thead{display:none}
+  table.stack tr{display:block;border-bottom:2px solid var(--rule);padding:8px 0}
+  table.stack td{display:block;border:0;padding:2px 0}
+  table.stack td[data-l]::before{content:attr(data-l);font-family:var(--mono);font-size:.66rem;color:var(--dim);text-transform:uppercase;letter-spacing:.05em;display:block}
+  .rulebar{font-size:.66rem}
+  #map{height:420px}
+}
+@media print{
+  #map{height:400px}
+  details.srcd summary{display:none}
+  details.srcd .src{display:block}
+  .copybtn,#maplegend{display:none!important}
+  #map button,#mapbar{display:none!important}
+  h2{break-after:avoid;page-break-after:avoid}
+  .ref,.warnbox,tr{break-inside:avoid;page-break-inside:avoid}
+  section.rpt{break-before:auto}
+  #drop,#printbtn,#progress{display:none!important}
+  .sheet{border:0;max-width:none;padding:0}
+  .sheet::before,.sheet::after{display:none}
+  #map{height:300px}
+  body{font-size:12px}
+  a{color:var(--ink);text-decoration:none}
+}
+</style>
+</head>
+<body>
+<div class="sheet">
+<header>
+  <h1>NL Quarry Pre-Screen</h1>
+  <p class="sub">Runs the acceptance checks from Sections E and G of the provincial
+    <a href="https://www.gov.nl.ca/em/files/mines-quarries-quarry-permit-application-quarry-permit-application.pdf" target="_blank" rel="noopener">Quarry Permit/Lease Application</a>
+    (MLD-Q-QP-A) against the province's own published map data, live at the moment you run it.
+    It reports what the published record shows. It certifies nothing.
+    All measurements are referenced to NAD83(CSRS), the provincial survey datum; each source's datum has been independently verified or corrected (see Datum audit in results).</p>
+</header>
+<div class="rulebar">
+  <span>SETBACKS: PROPERTY 15m &middot; TRAIL 15m &middot; ROAD 50m &middot; PROTECTED RD 90m &middot; WATER 50m &middot; WETLAND 30m</span>
+</div>
+
+<div id="drop" tabindex="0" role="button" aria-label="Upload boundary file">
+  <p class="big">Drop your boundary file here, or click to choose</p>
+  <p class="small">KMZ, KML, or zipped shapefile — the same file the application requires. Include the access road.</p>
+  <input id="file" type="file" accept=".kmz,.kml,.zip" hidden>
+</div>
+
+<div id="err"></div>
+<div id="progress"></div>
+<div id="mapbar"></div>
+<div id="map"><div id="maplegend"></div></div>
+<div id="stamp" class="stamp"><div class="lvl"></div><div class="dtl"></div></div>
+<div id="results"></div>
+<button id="printbtn" onclick="window.print()">Print this report</button>
+
+<footer>
+  <p>Every result above is stamped with its source and query time. Sources are the Government of NL's own published services
+  (dnrmaps Geoscience Atlas, GNL ArcGIS Online, Crown Lands Land Use Atlas) plus bundled snapshots of the Municipal Affairs
+  protected-road KMZs. Archaeology and rare-species data are not public by design and are never screenable here.
+  Cabin access trails are not mapped in any provincial layer. This tool holds no data and stores nothing you upload;
+  screening runs entirely in your browser.</p>
+  <p>Built by D. Pittman. Source data verification, datum corrections,
+  and screening rules developed against operating quarry permits. &copy; 2026 D. Pittman &middot;
+  <a href="https://github.com/dbpittman/QuarryCheck/blob/main/LICENSE">MIT License</a> &middot;
+  Not affiliated with the Government of Newfoundland and Labrador.</p>
+</footer>
+</div>
+
+<script src="vendor/turf.min.js"></script>
+<script src="vendor/maplibre-gl.js"></script>
+<script src="vendor/jszip.min.js"></script>
+<script src="vendor/togeojson.umd.js"></script>
+<script src="vendor/shp.js"></script>
+<script src="app.js"></script>
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const drop = $('#drop'), fileIn = $('#file'), errBox = $('#err'), prog = $('#progress');
+
+drop.addEventListener('click', () => fileIn.click());
+drop.addEventListener('keydown', e => { if (e.key==='Enter'||e.key===' ') fileIn.click(); });
+drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('on'); });
+drop.addEventListener('dragleave', () => drop.classList.remove('on'));
+drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('on');
+  if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]); });
+fileIn.addEventListener('change', () => { if (fileIn.files.length) handleFile(fileIn.files[0]); });
+
+function showErr(msg){ errBox.textContent = msg; errBox.style.display='block'; }
+function clearErr(){ errBox.style.display='none'; }
+
+async function parseUpload(file){
+  const name = file.name.toLowerCase();
+  if (name.endsWith('.kml')) {
+    const text = await file.text();
+    return toGeoJSON.kml(new DOMParser().parseFromString(text, 'text/xml'));
+  }
+  if (name.endsWith('.kmz')) {
+    const zip = await JSZip.loadAsync(await file.arrayBuffer());
+    const kmlName = Object.keys(zip.files).find(n => n.toLowerCase().endsWith('.kml'));
+    if (!kmlName) throw new Error('No KML found inside the KMZ.');
+    const text = await zip.files[kmlName].async('string');
+    return toGeoJSON.kml(new DOMParser().parseFromString(text, 'text/xml'));
+  }
+  if (name.endsWith('.zip')) {
+    const out = await shp(await file.arrayBuffer());
+    if (Array.isArray(out)) return { type:'FeatureCollection', features: out.flatMap(fc=>fc.features) };
+    return out;
+  }
+  throw new Error('Unsupported file type. Use KMZ, KML, or a zipped shapefile.');
+}
+
+function extractBoundary(fc){
+  const polys = fc.features.filter(f => f.geometry &&
+    (f.geometry.type==='Polygon' || f.geometry.type==='MultiPolygon'));
+  const lines = fc.features.filter(f => f.geometry &&
+    (f.geometry.type==='LineString' || f.geometry.type==='MultiLineString'));
+  if (!polys.length) throw new Error('No polygon found in the file. The quarry boundary must be a polygon; the access road is a line.');
+  let boundary;
+  if (polys.length === 1) boundary = polys[0];
+  else {
+    // dissolve multiple polygons into one boundary
+    boundary = polys.reduce((a,b) => { try { return turf.union(turf.featureCollection([a,b])); } catch(e){ return a; } });
+  }
+  return { boundary, access: lines, polyCount: polys.length };
+}
+
+let map = null;
+function showMap(boundary, access){
+  $('#mapbar').style.display='flex';
+  $('#map').style.display='block';
+  const bbox = turf.bbox(turf.buffer(boundary, 0.5, {units:'kilometers'}));
+  if (!map) {
+    const shiftTopoBbox = (url) => {
+      try {
+        if (!url.includes('/GeoAtlas/Topographic/MapServer/export')) return null;
+        const m = url.match(/bbox=(-?[\d.]+),(-?[\d.]+),(-?[\d.]+),(-?[\d.]+)/);
+        if (!m) return null;
+        const [x1,y1,x2,y2] = m.slice(1,5).map(Number);
+        const R = 111319.49079327358;
+        const cx=(x1+x2)/2, cy=(y1+y2)/2;
+        const lon = cx / R, lat = (2*Math.atan(Math.exp(cy/6378137)) - Math.PI/2) * 180/Math.PI;
+        const sh = nad27shift(lon, lat);
+        if (!sh) return null;
+        const dx = sh[0]*R, dy = sh[1]*R/Math.cos(lat*Math.PI/180);
+        return url.replace(m[0], `bbox=${x1-dx},${y1-dy},${x2-dx},${y2-dy}`);
+      } catch(e){ return null; }
+    };
+    map = new maplibregl.Map({
+      container:'map',
+      transformRequest: (url, resourceType) => {
+        const s = shiftTopoBbox(url);
+        return s ? { url: s } : { url };
+      },
+      style:{ version:8, glyphs:'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf', sources:{
+        esritopo:{ type:'raster',
+          tiles:['https://services.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}'],
+          tileSize:256, attribution:'Basemap: Esri World Topo Map (default basemap of the NL Land Use Atlas)' },
+        nlimg:{ type:'raster',
+          tiles:['https://www.gov.nl.ca/landuseatlasmaps/rest/services/NLImagery/MapServer/tile/{z}/{y}/{x}'],
+          tileSize:256, minzoom:6, maxzoom:19,
+          attribution:'Imagery: Government of NL (NLImagery, NAD83(CSRS)-referenced; island coverage only)' },
+        esriimg:{ type:'raster',
+          tiles:['https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
+          tileSize:256, attribution:'Imagery: Esri World Imagery (as used by the NL Land Use Atlas)' },
+        nltopo:{ type:'raster',
+          tiles:['https://dnrmaps.gov.nl.ca/arcgis/rest/services/GeoAtlas/Topographic/MapServer/export?bbox={bbox-epsg-3857}&bboxSR=3857&imageSR=3857&size=512,512&format=png&transparent=false&f=image'],
+          tileSize:256, attribution:'Basemap: Government of NL, dnrmaps Geoscience Atlas (1:50k topographic)' },
+        nlroads:{ type:'raster',
+          tiles:['https://dnrmaps.gov.nl.ca/arcgis/rest/services/GeoAtlas/Map_Layers/MapServer/export?bbox={bbox-epsg-3857}&bboxSR=3857&imageSR=3857&size=512,512&format=png32&transparent=true&layers=show:12,13,14&f=image'],
+          tileSize:256, attribution:'Roads: Government of NL, dnrmaps (same layer screened in G3)' },
+        osm:{ type:'raster',
+          tiles:['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize:256,
+          attribution:'&copy; OpenStreetMap contributors' },
+        landuse:{ type:'raster',
+          tiles:['https://www.gov.nl.ca/landuseatlasmaps/rest/services/LandUseDetails/MapServer/export?bbox={bbox-epsg-3857}&bboxSR=3857&imageSR=3857&size=512,512&format=png32&transparent=true&f=image'],
+          tileSize:256, attribution:'Overlay: Crown Lands Land Use Atlas' } },
+        layers:[
+          { id:'esritopo', type:'raster', source:'esritopo', layout:{ visibility:'none' } },
+          { id:'esriimg', type:'raster', source:'esriimg', layout:{ visibility:'none' } },
+          { id:'nlimg', type:'raster', source:'nlimg' },
+          { id:'osm', type:'raster', source:'osm', layout:{ visibility:'none' } },
+          { id:'nltopo', type:'raster', source:'nltopo', layout:{ visibility:'none' } },
+          { id:'nlroads', type:'raster', source:'nlroads', layout:{ visibility:'none' } },
+          { id:'landuse', type:'raster', source:'landuse', layout:{ visibility:'none' } } ] },
+      bounds: bbox, fitBoundsOptions:{ padding:30 }
+    });
+    map.on('load', () => addLayers(boundary, access));
+    // basemap cycle: Atlas Topo -> Atlas Imagery -> OSM -> NL provincial stack
+    const BASEMAPS = [
+      { label:'NL Imagery', on:['nlimg'] },
+      { label:'NL Topo', on:['nltopo','nlroads'] },
+      { label:'Esri Imagery', on:['esriimg'] },
+    ];
+    let bmIdx = 0;
+    const ALLBM = ['esritopo','nlimg','esriimg','osm','nltopo','nlroads'];
+    const tg = document.createElement('button');
+    tg.textContent = 'Basemap: ' + BASEMAPS[0].label; tg.title = 'Cycle basemap';
+    document.getElementById('mapbar').appendChild(tg);
+
+    tg.onclick = () => {
+      bmIdx = (bmIdx + 1) % BASEMAPS.length;
+      for (const id of ALLBM) map.setLayoutProperty(id, 'visibility', BASEMAPS[bmIdx].on.includes(id) ? 'visible' : 'none');
+      tg.textContent = 'Basemap: ' + BASEMAPS[bmIdx].label;
+    };
+ const lu = document.createElement('button');
+    lu.textContent = 'Land Use: off'; lu.title = 'Crown Lands Land Use Atlas overlay';
+
+    lu.onclick = () => {
+      const on = map.getLayoutProperty('landuse','visibility') === 'visible';
+      map.setLayoutProperty('landuse','visibility', on ? 'none' : 'visible');
+      lu.textContent = on ? 'Land Use: off' : 'Land Use: on';
+    };
+    document.getElementById('mapbar').appendChild(lu);
+    const nm = document.createElement('button');
+    nm.textContent = 'Names: off'; nm.title = 'Official place names (Canadian Geographical Names Database)';
+
+    let namesOn = false, nameTimer = null;
+    const EXCLUDE_CODES = ['SHL','BNK','SEAU','SEAF','ABYS','KNOL'];
+    async function loadNames(){
+      if (!namesOn) return;
+      const b = map.getBounds();
+      try {
+        const u = `https://geogratis.gc.ca/services/geoname/en/geonames.json?bbox=${b.getWest().toFixed(4)},${b.getSouth().toFixed(4)},${b.getEast().toFixed(4)},${b.getNorth().toFixed(4)}&num=100`;
+        const r = await fetch(u); const d = await r.json();
+        const feats = (d.items||[])
+          .filter(i => !EXCLUDE_CODES.includes((i.concise||{}).code))
+          .map(i => ({ type:'Feature',
+            properties:{ name:i.name, pop:['CITY','TOWN','VILG','HAM','UNP'].includes((i.concise||{}).code)?1:0 },
+            geometry:{ type:'Point', coordinates:[i.longitude, i.latitude] } }));
+        const fc = { type:'FeatureCollection', features:feats };
+        if (map.getSource('gnames')) map.getSource('gnames').setData(fc);
+        else {
+          map.addSource('gnames', { type:'geojson', data:fc });
+          map.addLayer({ id:'gnames', type:'symbol', source:'gnames',
+            layout:{ 'text-field':['get','name'], 'text-font':['Noto Sans Regular'],
+              'text-size':['interpolate',['linear'],['zoom'], 8, ['case',['==',['get','pop'],1],13,11], 14, ['case',['==',['get','pop'],1],18,14]],
+              'text-letter-spacing':0.04, 'text-max-width':8, 'text-padding':6 },
+            paint:{ 'text-color':'#1a1a1a', 'text-halo-color':'rgba(255,255,255,0.95)', 'text-halo-width':1.8, 'text-halo-blur':0.5 } });
+        }
+      } catch(e){ console.warn('names fetch failed', e); }
+    }
+    map.on('moveend', () => { if (!namesOn) return; clearTimeout(nameTimer); nameTimer = setTimeout(loadNames, 400); });
+    nm.onclick = () => {
+      namesOn = !namesOn;
+      nm.textContent = namesOn ? 'Names: on' : 'Names: off';
+      if (namesOn) loadNames();
+      else if (map.getLayer('gnames')) map.setLayoutProperty('gnames','visibility','none');
+      if (namesOn && map.getLayer('gnames')) map.setLayoutProperty('gnames','visibility','visible');
+      if (map.getLayer('road-names')) map.setLayoutProperty('road-names','visibility', namesOn?'visible':'none');
+    };
+    document.getElementById('mapbar').appendChild(nm);
+  } else {
+    addLayers(boundary, access);
+    map.fitBounds(bbox, { padding:30 });
+  }
+}
+function addLayers(boundary, access){
+  const rm = id => { if (map.getLayer(id)) map.removeLayer(id); if (map.getSource(id)) map.removeSource(id); };
+  ['bnd','bndline-case','bndline','acc','buf50-case','buf50','buf90-case','buf90','buf200-case','buf200','buf1k-case','buf1k','hits-line-case'].forEach(rm);
+  map.addSource('bnd', { type:'geojson', data: boundary });
+  map.addLayer({ id:'bnd', type:'fill', source:'bnd', paint:{ 'fill-color':'#FFFFFF','fill-opacity':0.12 } });
+  map.addLayer({ id:'bndline-case', type:'line', source:'bnd', paint:{ 'line-color':'rgba(255,255,255,0.9)','line-width':4.5 } });
+  map.addLayer({ id:'bndline', type:'line', source:'bnd', paint:{ 'line-color':'#0A0A0A','line-width':2.4 } });
+  try {
+    const ring = (id, km, color, dash, caseColor) => {
+      map.addSource(id, { type:'geojson', data: turf.buffer(boundary, km, {units:'kilometers'}) });
+      const vis = (window._ringVis && window._ringVis[id] === false) ? 'none' : 'visible';
+      map.addLayer({ id:id+'-case', type:'line', source:id, layout:{ visibility:vis },
+        paint:{ 'line-color':caseColor||'rgba(0,0,0,0.6)','line-width':4.5 } });
+      map.addLayer({ id:id, type:'line', source:id, layout:{ visibility:vis },
+        paint:{ 'line-color':color,'line-width':2.2,'line-dasharray':dash } });
+    };
+    ring('buf50', 0.05, MAPC.ring50, [2,1.6]);
+    ring('buf90', 0.09, MAPC.ring90, [3,1.6]);
+    ring('buf200', 0.2, MAPC.ring200, [4,2]);
+    ring('buf1k', 1.0,  MAPC.ring1k, [5,2.5]);
+    buildRingToggles();
+  } catch(e){}
+  if (access && access.length) {
+    map.addSource('acc', { type:'geojson', data: { type:'FeatureCollection', features: access } });
+    map.addLayer({ id:'acc', type:'line', source:'acc', paint:{ 'line-color':'#2B5E8C','line-width':2,'line-dasharray':[1,1] } });
+  }
+}
+
+async function handleFile(file){
+  clearErr();
+  $('#results').innerHTML=''; $('#stamp').style.display='none'; $('#printbtn').style.display='none';
+  try {
+    const fc = await parseUpload(file);
+    const { boundary, access, polyCount } = extractBoundary(fc);
+    try { await loadShiftLattice((u,o)=>fetch(u,o)); } catch(e){}
+    const areaHa = (turf.area(boundary)/10000).toFixed(2);
+    showMap(boundary, access);
+    $('#map').classList.add('busy');
+    const stamp = $('#stamp');
+    stamp.className = 'stamp RUNNING'; stamp.style.display='block';
+    const total = SOURCES.length + BUNDLED.length;
+    stamp.querySelector('.lvl').textContent = 'SCREENING';
+    stamp.querySelector('.dtl').textContent = `Boundary loaded: ${areaHa} ha, ${polyCount} polygon(s), ${access.length} access line(s). Querying ${total} provincial sources — takes 15\u201330 seconds.`;
+    prog.style.display='block';
+    prog.textContent = '';
+    let done=0, failed=[];
+    const t0 = Date.now();
+    window._bnd = boundary;
+    const out = await runScreen(boundary, (u,o)=>fetch(u,o), r => {
+      done++;
+      if (!r.ok && !r.missing) failed.push(r.id);
+      stamp.querySelector('.dtl').textContent = `${done} of ${total} provincial sources answered`
+        + (failed.length? ` (${failed.length} unreachable)` : '') + '.';
+    });
+    $('#map').classList.remove('busy');
+    drawHits(out);
+    if (map.isStyleLoaded()) drawWaterTie(out); else map.once('idle', ()=>drawWaterTie(out));
+    prog.textContent = `Completed in ${((Date.now()-t0)/1000).toFixed(1)} s. `
+      + (failed.length? `Unreachable sources: ${failed.join(', ')} — affected checks are marked ADVISORY.` : 'All sources answered.');
+    render(out, { areaHa, fileName: file.name });
+  } catch (e) {
+    prog.style.display='none';
+    $('#map').classList.remove('busy');
+    $('#stamp').style.display='none';
+    showErr('Could not screen this file: ' + (e.message||e));
+    console.error(e);
+  }
+}
+
+/* Map palette: tuned for legibility over dark orthoimagery.
+   Warm = features/conflicts; cool/neutral = reference geometry; all lines cased. */
+const MAPC = {
+  road:'#FF3B30',        // roads / protected road zones (solid)
+  crown:'#BF5AF2',       // Crown titles/applications
+  tenure:'#FF9F0A',      // quarry tenure (all layers + snapshot)
+  qmel:'#F472B6',        // exploration licences
+  npa:'#FF0080',         // No Permits Available (prohibition)
+  tx:'#32D2E8',          // transmission
+  bldg:'#FFFFFF',        // buildings (white, black stroke)
+  water:'#3FA0FF',       // nearest-waterbody tie
+  ring50:'#FFD60A', ring90:'#FF453A', ring200:'#64D2FF', ring1k:'#FFFFFF',
+};
+window._ringVis = { buf50:true, buf90:true, buf200:true, buf1k:true };
+function buildRingToggles(){
+  if (document.getElementById('ringtg-buf50')) return;
+  const bar = document.getElementById('mapbar');
+  const defs = [
+    ['buf50','50 m', MAPC.ring50], ['buf90','90 m', MAPC.ring90],
+    ['buf200','200 m', MAPC.ring200], ['buf1k','1 km', MAPC.ring1k],
+  ];
+  const wrap = document.createElement('span');
+  wrap.style.cssText = 'display:inline-flex;gap:6px;align-items:center;margin-left:8px;padding-left:10px;border-left:1px solid var(--rule)';
+  for (const [id,label,color] of defs) {
+    const b = document.createElement('button');
+    b.id = 'ringtg-'+id;
+    b.innerHTML = `<span style="display:inline-block;width:9px;border-top:2px dashed ${color};vertical-align:2px;margin-right:5px"></span>${label}`;
+    b.title = 'Toggle '+label+' ring';
+    const paint = () => { b.style.opacity = window._ringVis[id] ? '1' : '0.45'; };
+    b.onclick = () => {
+      window._ringVis[id] = !window._ringVis[id];
+      const v = window._ringVis[id] ? 'visible' : 'none';
+      for (const lid of [id, id+'-case']) if (map.getLayer(lid)) map.setLayoutProperty(lid, 'visibility', v);
+      paint();
+    };
+    paint();
+    wrap.appendChild(b);
+  }
+  bar.appendChild(wrap);
+}
+function drawHits(out){
+  if (!map) return;
+  const feats = [];
+  const wanted = {
+    crown_titles:MAPC.crown, crown_apps:MAPC.crown,
+    q_apps:MAPC.tenure, q_sub:MAPC.tenure, q_permits:MAPC.tenure, q_leases:MAPC.tenure, q_snapshot:MAPC.tenure,
+    no_permit_areas:MAPC.npa, qmels:MAPC.qmel,
+    lu_roads_p:MAPC.road, lu_roads_s:MAPC.road,
+    protected_roads:MAPC.road, tx_nalcor:MAPC.tx, tx_canvec:MAPC.tx,
+    bldg_bing:MAPC.bldg, bldg_topo:MAPC.bldg,
+  };
+  // NLGN monuments: reference symbols, not conflicts
+  const mn = out.results['nlgn'];
+  if (mn && mn.ok) for (const f of mn.features) if (f.geometry)
+    feats.push({ type:'Feature', properties:{ c:'#000', src:'NLGN monument '+(f.properties.number||''), mon:1 }, geometry:f.geometry });
+  for (const [id,color] of Object.entries(wanted)) {
+    const r = out.results[id];
+    if (!r || !r.ok) continue;
+    const isBldg = id === 'bldg_bing' || id === 'bldg_topo';
+    const isRoad = ['lu_roads_p','lu_roads_s','road_tlh','road_cartwright'].includes(id);
+    for (const f of r.features) if (f.geometry) {
+      if (isBldg && window._bnd) {
+        try { if (minDistanceMeters(window._bnd, f) > 1500) continue; } catch(e){}
+      }
+      const props = { c:color, src:(r.src.note||id) };
+      if (isRoad) { const nmv = featureName(f, r.src.nameFields); if (nmv && nmv !== 'unnamed feature') props.rn = nmv.replace(/^file /,''); }
+      feats.push({ type:'Feature', properties:props, geometry:f.geometry });
+    }
+  }
+  const fc = { type:'FeatureCollection', features:feats };
+  const apply = () => {
+    if (map.getSource('hits')) { map.getSource('hits').setData(fc); return; }
+    map.addSource('hits', { type:'geojson', data:fc });
+    map.addLayer({ id:'hits-fill', type:'fill', source:'hits',
+      filter:['in',['geometry-type'],['literal',['Polygon','MultiPolygon']]],
+      paint:{ 'fill-color':['get','c'], 'fill-opacity':0.12 } });
+    map.addLayer({ id:'hits-line-case', type:'line', source:'hits',
+      filter:['in',['geometry-type'],['literal',['Polygon','MultiPolygon','LineString','MultiLineString']]],
+      paint:{ 'line-color':'rgba(0,0,0,0.55)', 'line-width':3.6 } });
+    map.addLayer({ id:'hits-line', type:'line', source:'hits',
+      filter:['in',['geometry-type'],['literal',['Polygon','MultiPolygon','LineString','MultiLineString']]],
+      paint:{ 'line-color':['get','c'], 'line-width':1.8 } });
+    map.addLayer({ id:'hits-pt', type:'circle', source:'hits',
+      filter:['all',['in',['geometry-type'],['literal',['Point','MultiPoint']]],['!',['has','mon']]],
+      paint:{ 'circle-color':['get','c'], 'circle-radius':4, 'circle-stroke-color':'#000', 'circle-stroke-width':1.2 } });
+    map.addLayer({ id:'hits-mon', type:'circle', source:'hits',
+      filter:['has','mon'],
+      paint:{ 'circle-color':'#fff', 'circle-radius':5, 'circle-stroke-color':'#000', 'circle-stroke-width':2 } });
+    map.addLayer({ id:'road-names', type:'symbol', source:'hits',
+      filter:['has','rn'],
+      layout:{ 'symbol-placement':'line', 'text-field':['get','rn'], 'text-font':['Noto Sans Regular'],
+        'text-size':12, 'visibility':'none' },
+      paint:{ 'text-color':'#FFFFFF', 'text-halo-color':'rgba(0,0,0,0.75)', 'text-halo-width':1.6 } });
+    map.on('click','hits-mon', ev => popupHit(ev));
+    map.on('click','hits-fill', ev => popupHit(ev));
+    map.on('click','hits-line', ev => popupHit(ev));
+    map.on('click','hits-pt', ev => popupHit(ev));
+  };
+  const popupHit = ev => {
+    const p = ev.features[0].properties;
+    new maplibregl.Popup({closeButton:false}).setLngLat(ev.lngLat)
+      .setHTML('<span style="font-family:var(--mono);font-size:.72rem">'+esc(p.src)+'</span>').addTo(map);
+  };
+  if (map.isStyleLoaded()) apply(); else map.once('idle', apply);
+  const lg = document.getElementById('maplegend');
+  const dash = (color) => `<span class="sw" style="background:none;border-top:2px dashed ${color};height:0;vertical-align:3px"></span>`;
+  lg.innerHTML = [
+    ['#7B3FA0','Crown titles/apps'],['#8A5A00','quarry tenure'],
+    ['#B3261E','roads / protected rd (solid)'],['#555','transmission'],['#333','buildings']
+  ].map(([c,l])=>`<span class="sw" style="background:${c}"></span>${l}`).join('<br>')
+    + '<br><span class="swm"></span>NLGN monument'
+    + '<br><span class="sw" style="background:none;border-top:2px solid #1D6FB8;height:0;vertical-align:3px"></span>nearest waterbody (measured)'
+    + '<br>' + dash('#96690F') + '50 m buffer (road & water setback)'
+    + '<br>' + dash('#1D6FB8') + '200 m (waterbody reporting, E5)'
+    + '<br>' + dash('#B3261E') + '90 m buffer (protected road setback)'
+    + '<br>' + dash('#333') + '1 km radius';
+  lg.style.display='block';
+}
+window.addEventListener('beforeprint', ()=>{ for (const d of document.querySelectorAll('details.srcd')) { d.dataset.was=d.open?'1':''; d.open=true; } });
+window.addEventListener('afterprint', ()=>{ for (const d of document.querySelectorAll('details.srcd')) d.open=!!d.dataset.was; });
+function nearestPointPair(a, b){
+  // closest points between two features, metres; returns {pa, pb, dist}
+  const toLines = f => {
+    const g = f.geometry || f, t = g.type;
+    if (t==='Point'||t==='MultiPoint') return null;
+    if (t==='LineString') return [turf.feature(g)];
+    if (t==='MultiLineString') return g.coordinates.map(c=>turf.lineString(c));
+    const l = turf.polygonToLine(turf.feature(g));
+    const out=[]; const push=ft=>{ if(ft.geometry.type==='LineString') out.push(ft);
+      else ft.geometry.coordinates.forEach(c=>out.push(turf.lineString(c))); };
+    if (l.type==='FeatureCollection') l.features.forEach(push); else push(l);
+    return out;
+  };
+  const ptsA = turf.explode(a).features, ptsB = turf.explode(b).features;
+  const linesA = toLines(a), linesB = toLines(b);
+  let best = null;
+  const consider = (pa, pb, d) => { if (!best || d < best.dist) best = { pa, pb, dist: d }; };
+  if (linesB) for (const p of ptsA) for (const l of linesB) {
+    const np = turf.nearestPointOnLine(l, p, {units:'meters'});
+    consider(p.geometry.coordinates, np.geometry.coordinates, np.properties.dist);
+  }
+  if (linesA) for (const p of ptsB) for (const l of linesA) {
+    const np = turf.nearestPointOnLine(l, p, {units:'meters'});
+    consider(np.geometry.coordinates, p.geometry.coordinates, np.properties.dist);
+  }
+  if (!linesA && !linesB) for (const p of ptsA) for (const q of ptsB)
+    consider(p.geometry.coordinates, q.geometry.coordinates, turf.distance(p,q,{units:'meters'}));
+  return best;
+}
+function drawWaterTie(out){
+  if (!map || !window._bnd) return;
+  const g5 = (out.g||[]).find(c=>c.id==='G5');
+  const rmv = id => { if (map.getLayer(id)) map.removeLayer(id); if (map.getSource(id)) map.removeSource(id); };
+  ['wtie-lbl','wtie'].forEach(rmv);
+  if (!g5 || !g5.nearest || !g5.nearest.feature) return;
+  const pair = nearestPointPair(window._bnd, g5.nearest.feature);
+  if (!pair) return;
+  const line = turf.lineString([pair.pa, pair.pb]);
+  const mid = turf.midpoint(turf.point(pair.pa), turf.point(pair.pb));
+  mid.properties = { d: fmt(pair.dist) };
+  map.addSource('wtie', { type:'geojson', data:{ type:'FeatureCollection', features:[line, mid] } });
+  map.addLayer({ id:'wtie', type:'line', source:'wtie',
+    filter:['==',['geometry-type'],'LineString'],
+    paint:{ 'line-color':MAPC.water,'line-width':2.4 } });
+  map.addLayer({ id:'wtie-lbl', type:'symbol', source:'wtie',
+    filter:['==',['geometry-type'],'Point'],
+    layout:{ 'text-field':['get','d'], 'text-font':['Noto Sans Regular'], 'text-size':13, 'text-offset':[0,-0.8] },
+    paint:{ 'text-color':'#FFFFFF','text-halo-color':'rgba(0,0,0,0.75)','text-halo-width':1.8 } });
+}
+function esc(s){ return String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function attrTable(f){
+  if (!f || !f.properties) return '';
+  const skip = /^(objectid|shape|shape_|globalid|se_anno|st_)/i;
+  const rows = Object.entries(f.properties)
+    .filter(([k,v]) => !skip.test(k) && v !== null && v !== undefined && String(v).trim() !== '')
+    .slice(0, 14)
+    .map(([k,v]) => {
+      let out = String(v);
+      if (/date/i.test(k) && /^1[5-9]\d{11}$/.test(out)) out = new Date(Number(out)).toISOString().slice(0,10);
+      return `<tr><td>${esc(k)}</td><td>${esc(out.slice(0,120))}</td></tr>`;
+    });
+  if (!rows.length) return '<div class="src">record carries no populated attributes beyond its ID</div>';
+  return '<table class="attrs">' + rows.join('') + '</table>';
+}
+function srcLine(sources){
+  return sources.map(s => s.ok
+    ? `${esc(s.note||s.id)} [${esc(s.authority||'')}] @ ${esc((s.queried||'').replace('T',' ').slice(0,19))}Z`
+    : `<span class="bad">${esc(s.note||s.id)}: UNREACHABLE (${esc(s.error||'')})</span>`
+  ).join('<br>');
+}
+function srcFold(sources){
+  const bad = sources.filter(x=>!x.ok).length;
+  const t = sources.map(x=>x.queried).filter(Boolean).sort().pop() || '';
+  const sum = `${sources.length} source${sources.length>1?'s':''}${bad? `, <span class="bad">${bad} unreachable</span>` : ''} @ ${esc(t.replace('T',' ').slice(11,19))}Z`;
+  return `<details class="srcd"><summary>${sum}</summary><div class="src">${srcLine(sources)}</div></details>`;
+}
+function attrFold(f, title){
+  const t = attrTable(f);
+  if (!t) return '';
+  return `<details class="srcd"><summary>${esc(title||'record details')}</summary>${t}</details>`;
+}
+
+function render(out, meta){
+  const stamp = $('#stamp');
+  stamp.className = 'stamp ' + out.verdict.level;
+  stamp.style.display='block';
+  stamp.querySelector('.lvl').textContent = out.verdict.text;
+  stamp.querySelector('.dtl').textContent = out.verdict.detail
+    + ` — ${meta.fileName}, ${meta.areaHa} ha, screened ${out.ranAt.replace('T',' ').slice(0,19)}Z.`;
+
+  let h = '<section class="rpt"><h2>Section G — Boundary Setbacks</h2><table class="stack"><thead><tr><th>Check</th><th>Verdict</th><th>Nearest feature</th><th>Distance</th></tr></thead><tbody>';
+  for (const c of out.g) {
+    const enc = c.nearest && (c.nearest.dist < (c.setback||0) || c.nearest.dist === 0);
+    h += `<tr class="row${c.verdict}"><td><b>${c.id}</b> ${esc(c.label)}`
+      + c.notes.map(n=>`<div class="note">${esc(n)}</div>`).join('')
+      + srcFold(c.sources)
+      + `</td><td data-l="verdict"><span class="v ${c.verdict}">${c.verdict}</span></td>`
+      + `<td data-l="nearest feature">${c.nearest? esc(c.nearest.name) + `<div class="src">${esc(c.nearest.source)}</div>` + (enc ? attrFold(c.nearest.feature,'full record') : '') : '<span class="src">none within query range</span>'}</td>`
+      + `<td class="num" data-l="distance">${c.nearest? fmt(c.nearest.dist) : '—'}</td></tr>`;
+  }
+  h += '</tbody></table></section>';
+
+  h += '<section class="rpt"><h2>Section E — Questions <span class="copyhint">(verify anything marked for site confirmation)</span></h2>';
+  for (const e of out.e) {
+    h += `<div class="eahead"><p class="eq">${e.id}. ${esc(e.q)}</p><button class="copybtn" data-copy="${esc(e.answer)}">copy</button></div><div class="ea">${esc(e.answer)}</div>`;
+    if (e.note) h += `<div class="note">${esc(e.note)}</div>`;
+  }
+  h += '</section>';
+
+  h += '<section class="rpt"><h2>Referral forecast</h2><p class="note">Agencies the published data implicates. The application will be referred regardless; this shows what each referral will find.</p>';
+  if (!out.referrals.items.length) {
+    h += '<div class="ref"><div class="why">No agency-specific conflicts found in the published data for this boundary. The two offices below hold non-public data and will review regardless.</div></div>';
+  }
+  for (const it of out.referrals.items) {
+    h += `<div class="ref"><h3>${esc(it.agency)}</h3><div class="why">${esc(it.why)} — ${it.total} feature(s) found.</div>`;
+    if (it.note) h += `<div class="warnbox">${esc(it.note)}</div>`;
+    if (it.hits.length) {
+      h += '<ul>' + it.hits.map(x => {
+        const link = x.feature.properties && x.feature.properties.MPAB_LINK
+          ? ` — <a href="${esc(x.feature.properties.MPAB_LINK)}" target="_blank" rel="noopener">municipal plan</a>` : '';
+        return `<li>${esc(x.name)}, ${esc(x.dir)}, <span class="mono">${fmt(x.dist)}</span>${link}${x.dist===0? attrFold(x.feature,'record') : ''}</li>`;
+      }).join('') + (it.total>it.hits.length? `<li>… and ${it.total-it.hits.length} more</li>`:'') + '</ul>';
+    }
+    h += srcFold(it.sources) + `</div>`;
+  }
+  if (out.referrals.mirrorFlags.length) {
+    h += `<div class="warnbox"><b>Unconfirmed boundaries nearby.</b> The province's own mirror flags these tenure boundaries: `
+      + out.referrals.mirrorFlags.map(m=>`${esc(m.file||'?')} (${esc(m.company||'?')}): ${esc(m.status)}${m.notes? ' — '+esc(m.notes):''}`).join('; ')
+      + `. Distances to these features are not reliable.</div>`;
+  }
+  for (const u of out.referrals.unknowns) {
+    h += `<div class="ref"><h3>${esc(u.agency)}</h3><div class="why">${esc(u.why)}</div></div>`;
+  }
+
+  h += '</section><section class="rpt"><h2>Survey control — NL Geodetic Network</h2>';
+  if (out.monuments && out.monuments.length) {
+    h += '<p class="note">Nearest published control monuments. All measurements in this report are referenced to NAD83(CSRS), the datum these monuments realize.</p><table class="stack"><thead><tr><th>Marker</th><th>Distance</th><th>Direction</th><th>Easting/Northing (z)</th><th>Elev</th><th>Adjusted</th></tr></thead><tbody>';
+    for (const m of out.monuments) {
+      h += `<tr><td class="mono" data-l="marker">${esc(m.number||'?')}</td><td class="num" data-l="distance">${fmt(m.dist)}</td><td class="mono" data-l="direction">${esc(m.dir)}</td><td class="num" data-l="mtm east/north (zone)">${esc(String(m.east||''))} / ${esc(String(m.north||''))} (${esc(String(m.zone||''))})</td><td class="num" data-l="elev">${esc(String(m.elev||''))}</td><td class="mono" data-l="adjusted">${esc(m.adj_date? new Date(Number(m.adj_date)).toISOString().slice(0,10) : '')}</td></tr>`;
+    }
+    h += '</tbody></table>';
+  } else {
+    h += '<p class="note">No published NLGN monument within 5 km of this boundary. Measurements remain referenced to NAD83(CSRS) via the corrected source data.</p>';
+  }
+
+  h += '</section><section class="rpt"><h2>Datum audit</h2><p class="note">Reference frame: NAD83(CSRS), the provincial survey datum realized by the NL Geodetic Network. What each source\'s coordinates actually are, how that was verified, and what was done about it:</p>';
+  h += '<table class="stack"><thead><tr><th>Source</th><th>Claimed</th><th>Verified by</th><th>Action</th><th>Residual accuracy</th></tr></thead><tbody>';
+  for (const r of DATUM_AUDIT) {
+    h += `<tr><td data-l="source">${esc(r.group)}</td><td class="mono" data-l="claimed">${esc(r.claimed)}</td><td data-l="verified by">${esc(r.verified)}</td><td data-l="action">${esc(r.action)}</td><td class="mono" data-l="residual">${esc(r.residual)}</td></tr>`;
+  }
+  h += '</tbody></table>';
+
+  h += '</section>';
+  $('#results').innerHTML = h;
+  $('#printbtn').style.display='inline-block';
+  for (const b of document.querySelectorAll('.copybtn')) {
+    b.onclick = () => { navigator.clipboard.writeText(b.dataset.copy).then(()=>{ b.textContent='copied'; setTimeout(()=>b.textContent='copy',1200); }); };
+  }
+}
+</script>
+</body>
+</html>
