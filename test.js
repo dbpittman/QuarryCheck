@@ -360,6 +360,40 @@ async function main() {
        `road clearance well outside the band still passes (${Math.round(g3.nearest.dist)} m)`);
   }
 
+  console.log('\n[15] rule authority: every rule tagged, interpretations declared');
+  {
+    const gAll = app.runSectionG(boundary, {});
+    ok(gAll.every(c => c.basis && c.basis.tier && c.basis.cite), 'every Section G check carries a basis tier and citation');
+    ok(gAll.find(c=>c.id==='NPA').basis.tier === 'REG' && /s\.5/.test(gAll.find(c=>c.id==='NPA').basis.cite),
+       'NPA cites Quarry Materials Regulations s.5 at REG tier');
+    ok(/interpretation/i.test(gAll.find(c=>c.id==='G3').basis.cite) && /interpretation/i.test(gAll.find(c=>c.id==='G6').basis.cite),
+       'G3 and G6 declare their screening interpretations in the citation');
+    // reclassification path carries the full interpretation statement
+    const res = { type:'Feature', properties:{ ROADCLASS:'Resource / Recreation' },
+      geometry:{ type:'LineString', coordinates:[[-58.7530,47.6086],[-58.7515,47.6090]] } };
+    const roadsRes = { id:'lu_roads_p', ok:true, queried:new Date().toISOString(),
+      src:{ id:'lu_roads_p', note:'Primary roads', authority:'test', nameFields:['ROADNAME'], accuracy:5 }, features:[res] };
+    const g3i = app.runSectionG(boundary, { lu_roads_p: roadsRes }).find(c=>c.id==='G3');
+    ok(g3i.notes.some(n=>/screening interpretation/.test(n) && /reviewing officer/.test(n)),
+       'G3 reclassification note names itself an interpretation deferring to the reviewing officer');
+    const g6i = app.runSectionG(boundary, {}).find(c=>c.id==='G6');
+    ok(g6i.notes.some(n=>/screening interpretation/.test(n) && /NFCODE/.test(n)),
+       'G6 exclusion note names itself an interpretation grounded in the NFCODE domain');
+    // referral bases: monuments LEG, EA standing REG, defaults ADV
+    const monRes2 = { id:'nlgn', ok:true, queried:new Date().toISOString(),
+      src:{ id:'nlgn', note:'NLGN monuments', authority:'test', nameFields:['number'] },
+      features:[{ type:'Feature', properties:{ number:'T2' }, geometry:{ type:'Point', coordinates:[-58.7521,47.6088] } }] };
+    const rr = app.runReferralForecast(boundary, { nlgn: monRes2 });
+    ok(rr.items.find(i=>/GIS and Mapping/.test(i.agency)).basis.tier === 'LEG', 'monuments referral cites Lands Act at LEG tier');
+    ok(rr.standing.find(x=>/Environmental Assessment/.test(x.agency)).basis.tier === 'REG', 'EA standing entry carries REG tier');
+    // stamp asserts the form's criteria, attributes the consequence to the form
+    const encRoad = { ...roadsRes, features:[{ type:'Feature', properties:{ ROADNAME:'Route 470' }, geometry: res.geometry }] };
+    const ov = app.overallVerdict(app.runSectionG(boundary, { lu_roads_p: encRoad }));
+    ok(/form's acceptance criteria/.test(ov.text) && !/would not be accepted/.test(ov.text),
+       'FAIL stamp asserts the form criteria, not a departmental outcome');
+    ok(/the form states/.test(ov.detail), 'consequence language is attributed to the form');
+  }
+
   console.log(`\n${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
 }

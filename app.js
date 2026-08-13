@@ -510,6 +510,15 @@ function corroborated(hit, results, tol) {
   return false;
 }
 
+/* Rule authority tiers. Every check and referral entry declares where its
+   rule comes from: LEG statute, REG regulation, POL published form/policy,
+   ADV departmental advice record, INT screening interpretation (deterministic
+   but not sourced from legislation or policy; the reviewing officer's reading
+   governs). Tags render beside each rule in the report. */
+const TIER_LABEL = { LEG:'Legislation', REG:'Regulation', POL:'Form criteria', ADV:'Advice record', INT:'Interpretation' };
+const INT_G3_NOTE = 'The reclassification of unnamed Resource/Recreation-class roads to the 15 m trail setback is a screening interpretation applied by this tool, based on the province\'s own road classification and resource-road mapping. It is not sourced from legislation or policy; the reviewing officer\'s reading governs.';
+const INT_G6_NOTE = 'The exclusion of Soil Barren and Rock Barren classes from the wetland screen is a screening interpretation applied by this tool, based on the layer\'s published NFCODE coded-value domain (dry-ground classes). It is not sourced from legislation or policy; the reviewing officer\'s reading governs.';
+
 /* Section G. Returns array of check objects. */
 function runSectionG(boundary, results, opts) {
   opts = opts || {};
@@ -521,7 +530,7 @@ function runSectionG(boundary, results, opts) {
     const n = nearest(boundary, results, ids);
     const v = verdictFor(n, 15, failed(ids));
     const apps = nearest(boundary, results, ['crown_apps']);
-    checks.push({ id:'G1', label:'15 m from private property', setback:15, verdict:v, nearest:n,
+    checks.push({ id:'G1', label:'15 m from private property', setback:15, basis:{tier:'POL', cite:'Form MLD-Q-QP-A, Section G'}, verdict:v, nearest:n,
       sources: sourceStatus(results, ['crown_titles','crown_apps']),
       notes: [
         bandNote(n, 15),
@@ -535,7 +544,7 @@ function runSectionG(boundary, results, opts) {
     const ids = ['res_roads_nf','res_roads_lb','res_roads_dnr'];
     const n = nearest(boundary, results, ids);
     const v = (n && n.dist < 15) ? 'ENCROACHES' : 'ADVISORY';
-    checks.push({ id:'G2', label:'15 m from a trail (cabin access trail, forest access road)', setback:15,
+    checks.push({ id:'G2', label:'15 m from a trail (cabin access trail, forest access road)', setback:15, basis:{tier:'POL', cite:'Form MLD-Q-QP-A, Section G'},
       verdict:v, nearest:n, sources: sourceStatus(results, ids),
       notes: ['Cabin access trails are not mapped in any provincial layer. Mapped resource roads only. This check can fail a boundary but can never fully clear one.'] });
   }
@@ -577,12 +586,13 @@ function runSectionG(boundary, results, opts) {
     else if (overridden.length) {
       v = 'ADVISORY';
       notes.push(`${overridden.length} unnamed road hit(s) within 50 m reclassified as forest access road(s): the province's FFA resource-roads layer maps the same alignment (or the Atlas classes it Resource/Recreation). The 15 m G2 setback governs these; see G2. Confirm classification with the Quarries Section.`);
+      notes.push(INT_G3_NOTE);
     } else {
       v = verdictFor(nAll, 50, failed(['lu_roads_p','lu_roads_s']));
       const bn = bandNote(nAll, 50); if (bn) notes.push(bn);
     }
     const nShow = firm.length ? firm[0] : nAll;
-    checks.push({ id:'G3', label:'50 m from a road (paved municipal, gravel rural)', setback:50,
+    checks.push({ id:'G3', label:'50 m from a road (paved municipal, gravel rural)', setback:50, basis:{tier:'POL', cite:'Form MLD-Q-QP-A, Section G; unnamed-road reclassification is a screening interpretation'},
       verdict: v, nearest: nShow, sources: sourceStatus(results, ids), notes });
   }
 
@@ -590,7 +600,7 @@ function runSectionG(boundary, results, opts) {
     const ids = ['lu_prz','protected_roads'];
     const n = nearest(boundary, results, ids, f => f.properties.name || f.properties.NAME || f.properties.ROAD || 'protected road polygon');
     const bcl = nearest(boundary, results, ['building_control'], f => f.properties.name || 'building control line');
-    checks.push({ id:'G4', label:'90 m from a Protected Road', setback:90,
+    checks.push({ id:'G4', label:'90 m from a Protected Road', setback:90, basis:{tier:'POL', cite:'Form MLD-Q-QP-A, Section G; Protected Road Zoning Regulations'},
       verdict: verdictFor(n, 90, failed(ids)), nearest:n,
       sources: sourceStatus(results, ['lu_prz','protected_roads','building_control']),
       notes: [
@@ -612,7 +622,7 @@ function runSectionG(boundary, results, opts) {
       'Screened against mapped lakes and ponds (forestry inventory + 1:50k topo polygons). Mapped stream lines are excluded from this verdict; small waterbodies may be unmapped in both sources.',
       bandNote(n, 50),
     ].filter(Boolean);
-    checks.push({ id:'G5', label:'50 m from a waterbody (stream, pond)', setback:50,
+    checks.push({ id:'G5', label:'50 m from a waterbody (stream, pond)', setback:50, basis:{tier:'POL', cite:'Form MLD-Q-QP-A, Section G'},
       verdict: verdictFor(n, 50, failed(wbIds)), nearest: n, sources: sourceStatus(results, wbIds), notes });
   }
 
@@ -621,11 +631,12 @@ function runSectionG(boundary, results, opts) {
     const BOG_LABEL = { BOG:'Bog', WBOG:'Wet Bog', TBOG:'Treed Bog' };
     const nAll = nearest(boundary, results, ids,
       f => BOG_LABEL[f.properties.NFCODE] || `NFCODE ${f.properties.NFCODE}`);
-    checks.push({ id:'G6', label:'30 m from a wetland', setback:30,
+    checks.push({ id:'G6', label:'30 m from a wetland', setback:30, basis:{tier:'POL', cite:'Form MLD-Q-QP-A, Section G; SB/RB exclusion is a screening interpretation'},
       verdict: verdictFor(nAll, 30, failed(ids)), nearest: nAll,
       sources: sourceStatus(results, ids),
       notes: [
-        'Screened against the forestry inventory\'s wetland classes: Bog, Wet Bog, Treed Bog (per the layer\'s published NFCODE domain). Soil Barren and Rock Barren are dry-ground classes, not wetlands, and are excluded. The inventory can miss small marshes and fens; confirm on site.',
+        'Screened against the forestry inventory\'s wetland classes: Bog, Wet Bog, Treed Bog (per the layer\'s published NFCODE domain). The inventory can miss small marshes and fens; confirm on site.',
+        INT_G6_NOTE,
         bandNote(nAll, 30),
       ].filter(Boolean) });
   }
@@ -639,10 +650,10 @@ function runSectionG(boundary, results, opts) {
       const notes = [];
       if (live && live.ok) notes.push('Screened against the province\'s live No Permits Available layer' + (snap && snap.ok ? ' and the bundled snapshot' : '') + '. The listing is province-described work-in-progress; absence of a polygon is not proof none exists — confirm with the Quarries Section.');
       else notes.push('Live NPA layer unreachable this run; screened against a snapshot of a province-described work-in-progress listing. Absence of a polygon is not proof none exists; confirm with the Quarries Section.');
-      checks.push({ id:'NPA', label:'No Permits Available area (s.5, Quarry Materials Regulations)', setback:0,
+      checks.push({ id:'NPA', label:'No Permits Available area (s.5, Quarry Materials Regulations)', setback:0, basis:{tier:'REG', cite:'Quarry Materials Regulations, s.5'},
         verdict:v, nearest:n, sources: sourceStatus(results, ids), notes });
     } else {
-      checks.push({ id:'NPA', label:'No Permits Available area (s.5, Quarry Materials Regulations)', setback:0,
+      checks.push({ id:'NPA', label:'No Permits Available area (s.5, Quarry Materials Regulations)', setback:0, basis:{tier:'REG', cite:'Quarry Materials Regulations, s.5'},
         verdict:'ADVISORY', nearest:null, sources: sourceStatus(results, ids),
         notes: ['Neither the live NPA layer nor the bundled snapshot answered. Not screenable this run; confirm with the Quarries Section.'] });
     }
@@ -658,7 +669,7 @@ function runSectionG(boundary, results, opts) {
     if (named.length) v = 'ENCROACHES';
     else if (failed(ids)) v = 'ADVISORY';
     else if (inUncertaintyBand(nTen, 0)) v = 'ADVISORY';
-    checks.push({ id:'TEN', label:'Existing quarry tenure overlap', setback:0,
+    checks.push({ id:'TEN', label:'Existing quarry tenure overlap', setback:0, basis:{tier:'REG', cite:'Quarry Materials Act tenure regime'},
       verdict: v, nearest: nTen, sources: sourceStatus(results, ids),
       notes: [
         !named.length && inUncertaintyBand(nTen, 0) ? `Mapped tenure ${fmt(nTen.dist)} away, inside the source's roughly ±${nTen.accuracy} m positional accuracy: an overlap cannot be ruled out from the map alone. Verify against the recorded boundary before relying on separation.` : null,
@@ -770,11 +781,12 @@ function runSectionE(boundary, results) {
 function runReferralForecast(boundary, results) {
   const lab = inLabrador(boundary);
   const items = [];
-  const add = (agency, ids, maxDist, why, extraNote) => {
+  const add = (agency, ids, maxDist, why, extraNote, basis) => {
     const hits = collectWithin(boundary, results, ids, maxDist);
     const status = sourceStatus(results, ids);
     if (hits.length || status.some(s => !s.ok)) items.push({
-      agency, hits: hits.slice(0, 8), total: hits.length, why, sources: status, note: extraNote || null });
+      agency, hits: hits.slice(0, 8), total: hits.length, why, sources: status, note: extraNote || null,
+      basis: basis || {tier:'ADV', cite:'Referral practice, departmental advice records'} });
   };
 
   add('Mineral Lands Division (tenure conflict)', ['claims','min_tenure','cl_mines'], 100,
@@ -785,7 +797,8 @@ function runReferralForecast(boundary, results) {
     'Existing or proposed quarry tenure within 500 m (positions of dnrmaps tenure layers datum-corrected: the provincial tenure server serves untransformed NAD27 coordinates, 52-74 m off in NL; NTv2 shift applied here)',
     lab ? 'Labrador tenure: the province flags its own Labrador quarry boundaries as "Unconfirmed" or "Unavailable" (circle around a coordinate). Distances to these features are not reliable. The province\'s AGOL mirror carries a Boundary_Status field; cross-check below.' : null);
   add('Quarries Section — No Permits Available area (s.5)', ['npa_live','no_permit_areas'], 200,
-    'Designated No Permits Available area on or near the boundary — a permit cannot issue inside one');
+    'Designated No Permits Available area on or near the boundary — a permit cannot issue inside one', null,
+    {tier:'REG', cite:'Quarry Materials Regulations, s.5'});
   add('Water Resources Management Division', ['lu_pws','pwsa','intakes','water_rights','nat_drain','flood'], 1000,
     'Public water supply areas, intakes/wellheads, water rights, natural drainage, or flood extents nearby');
   add('Parks and protected areas', ['lu_protected','lu_cpcad','prov_protected','mmnpr'], 100,
@@ -824,7 +837,7 @@ function runReferralForecast(boundary, results) {
     if (mons.length || status.some(s => !s.ok)) items.push({
       agency:'GIS and Mapping Division (geodetic monuments)', hits: mons.slice(0, 8), total: mons.length,
       why:'NLGN control monument within 100 m of the boundary. A 5 m protective buffer applies around control survey markers (Lands Act s.65); contact GMD@gov.nl.ca before any activity that could disturb a marker.',
-      sources: status, note:null });
+      sources: status, note:null, basis:{tier:'LEG', cite:'Lands Act, s.65'} });
   }
 
   // Boundary_Status cross-check from AGOL mirror
@@ -856,20 +869,20 @@ function runReferralForecast(boundary, results) {
   const standing = [];
 
   if (areaHa !== null && areaHa > 10) {
-    standing.push({ agency:'Environmental Assessment Division — REGISTRATION REQUIRED', flagged:true,
+    standing.push({ agency:'Environmental Assessment Division — REGISTRATION REQUIRED', flagged:true, basis:{tier:'REG', cite:'NLR 54/03, s.33(3)'},
       why:`This boundary is ${areaHa.toFixed(2)} ha. A quarrying operation covering more than 10 hectares must be registered for environmental assessment (Environmental Assessment Regulations, 2003, s.33(3)).` });
   } else {
-    standing.push({ agency:'Environmental Assessment Division',
+    standing.push({ agency:'Environmental Assessment Division', basis:{tier:'REG', cite:'NLR 54/03, s.33(3), s.52'},
       why:`${areaHa !== null ? `This boundary is ${areaHa.toFixed(2)} ha — below` : 'Below'} the 10 ha EA registration threshold for quarrying (s.33(3)). Note the aggregation rule: an extension or a new operation adjacent to an existing one must be registered when the combined area exceeds the threshold (s.52).` });
   }
 
   {
     const wc = collectWithin(boundary, results, ['stream_isl','stream_lb','wline_isl','wline_lb','topo_wline','wbody_isl','wbody_lb','topo_wpoly'], 200);
     if (wc.length) {
-      standing.push({ agency:'Environmental Assessment Division — scheduled salmon rivers (s.28)', flagged:true,
+      standing.push({ agency:'Environmental Assessment Division — scheduled salmon rivers (s.28)', flagged:true, basis:{tier:'REG', cite:'NLR 54/03, s.28'},
         why:`Mapped watercourse or waterbody within 200 m (${wc.length} feature(s), nearest ${fmt(wc[0].dist)}). Any undertaking within 200 m of the high water mark of a scheduled salmon river must be registered for environmental assessment regardless of size (s.28). Whether a given watercourse is a scheduled salmon river is not determinable from these map layers — verify against the federal schedule before assuming this does not apply.` });
     } else {
-      standing.push({ agency:'Scheduled salmon rivers (EA Regulations s.28)',
+      standing.push({ agency:'Scheduled salmon rivers (EA Regulations s.28)', basis:{tier:'REG', cite:'NLR 54/03, s.28'},
         why:'No mapped watercourse within 200 m this run. If any watercourse near the site is a scheduled salmon river, EA registration is mandatory within 200 m of its high water mark, regardless of operation size.' });
     }
   }
@@ -904,7 +917,7 @@ function runReferralForecast(boundary, results) {
   standing.push({ agency:'Tourism, Culture, Arts and Recreation',
     why:'Near tourism assets or viewsheds, expect advice on visual screening, scheduling around peak visitor season, and site rehabilitation planning.' });
   if (lab) {
-    standing.push({ agency:'Indigenous consultation (Labrador)', flagged:true,
+    standing.push({ agency:'Indigenous consultation (Labrador)', flagged:true, basis:{tier:'POL', cite:'Provincial Indigenous consultation policy'},
       why:'Applications in Labrador are referred under the province\'s Indigenous consultation processes — Nunatsiavut Government (screened above where LIL/LISA is mapped), Innu Nation, and NunatuKavut Community Council depending on asserted or established rights in the area.' });
   }
 
@@ -930,7 +943,7 @@ function overallVerdict(gChecks) {
     if (enc.some(c => c.id === 'TEN')) parts.push('The boundary overlaps a mapped existing (or recently mapped) quarry location — a competing-tenure conflict unless it is the applicant\'s own.');
     if (enc.some(c => c.id === 'NPA')) parts.push('The boundary intersects a No Permits Available area (s.5).');
     return { level:'FAIL',
-      text:'This boundary would not be accepted as submitted.',
+      text:'Does not meet the form\'s acceptance criteria as submitted.',
       detail: parts.join(' ') };
   }
   const adv = gChecks.filter(c => c.verdict === 'ADVISORY');
@@ -985,5 +998,5 @@ if (typeof module !== 'undefined') module.exports = { DATUM_AUDIT,
   SOURCES, BUNDLED, runScreen, runSectionG, runSectionE, runReferralForecast,
   minDistanceMeters, directionFrom, queryArcgis, loadBundled, overallVerdict, inLabrador, fmt,
   checkDatumSentinel, datumSentinelStatus, DATUM_SENTINEL,
-  timedFetch, QUERY_TIMEOUT_1, QUERY_TIMEOUT_2,
+  timedFetch, QUERY_TIMEOUT_1, QUERY_TIMEOUT_2, TIER_LABEL,
 };

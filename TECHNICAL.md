@@ -219,6 +219,31 @@ interest types that are not screenable from public data), the printed report
 carries the same limitation statement in its header, PASS renders as
 "CLEAR (in data)", and every distance shows its source accuracy.
 
+## Rule authority tiers (added 2026-08)
+
+Every screening rule declares where it comes from, and the tag renders beside
+the rule in the report and in print. Tiers: **LEG** statute (Lands Act s.65
+monument buffer), **REG** regulation (Quarry Materials Regulations s.5 NPA;
+NLR 54/03 s.28/s.33(3)/s.52; the tenure regime), **POL** the published form's
+own criteria (all Section G setbacks trace to form MLD-Q-QP-A as written),
+**ADV** departmental advice records (the standing authorizations block,
+sourced from EA 2396), and **INT** screening interpretation.
+
+Exactly two rules carry the interpretation marker: the G3 unnamed-road
+reclassification and the G6 Soil/Rock Barren exclusion. Both are
+deterministic and evidence-grounded (FFA alignment coincidence; the layer's
+published NFCODE coded-value domain) but are not sourced from legislation or
+policy, and their report notes say so explicitly, deferring to the reviewing
+officer's reading. Tiering changes no behavior — an INT rule screens
+identically to a REG rule; the tags are provenance, not weights.
+
+The FAIL stamp was reworded with this change: it asserts that the boundary
+does not meet the form's acceptance criteria as submitted, and attributes the
+"will not be accepted" consequence to the form rather than predicting a
+departmental outcome. The tool bases itself on legislation and official
+documentation only; whether the department follows its own criteria in a
+given case is outside the tool's scope by design.
+
 ## Outage behavior
 
 A failed source can never produce a clean answer. Section G verdicts degrade
