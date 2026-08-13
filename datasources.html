@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>QuarryCheck &mdash; Data source inventory</title>
+<style>
+:root{--paper:#FAFAF8;--ink:#16181A;--rule:#D8D6CE;--dim:#5C5F58;
+--pass:#1B7F4D;--fail:#B3261E;--adv:#96690F;--link:#2B5E8C;
+--mono:'IBM Plex Mono',monospace;--sans:'Archivo',sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.55}
+.sheet{max-width:980px;margin:0 auto;padding:32px 24px 80px}
+h1{font-size:1.6rem;border-bottom:3px solid var(--ink);padding-bottom:8px}
+h2{font-size:1.15rem;margin-top:36px;border-bottom:2px solid var(--rule);padding-bottom:4px}
+h3{font-size:.98rem;margin-top:24px;color:var(--dim)}
+p{font-size:.9rem} p.li{margin:4px 0 4px 12px}
+a{color:var(--link)} code{font-family:var(--mono);font-size:.85em;background:#EFEEE9;padding:1px 4px}
+hr{border:0;border-top:2px solid var(--rule);margin:28px 0}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:.82rem}
+th,td{border:1px solid var(--rule);padding:6px 8px;text-align:left;vertical-align:top}
+th{background:#EFEEE9;font-size:.78rem;text-transform:uppercase;letter-spacing:.03em}
+.top{font-size:.82rem;margin-bottom:20px}
+@media (max-width:700px){
+.sheet{padding:16px 12px 60px}
+table.stack thead{display:none}
+table.stack tr{display:block;border:1px solid var(--rule);border-bottom:2px solid var(--rule);padding:6px 8px;margin-bottom:8px}
+table.stack td{display:block;border:0;padding:2px 0}
+table.stack td::before{content:attr(data-l) ": ";font-weight:700;text-transform:uppercase;font-size:.72rem;color:var(--dim)}
+}
+</style>
+</head>
+<body>
+<div class="sheet">
+<p class="top"><a href="index.html">&larr; Back to QuarryCheck</a></p>
+<h1>Data source inventory</h1>
+<p>Every data source evaluated for QuarryCheck: what it provides, whether it is used, and why. Status codes: <b>LIVE</b> (queried at screen time), <b>BUNDLED</b> (snapshot in <code>/data</code>), <b>BASEMAP</b> (display only), <b>OMITTED</b> (evaluated and excluded), <b>CANDIDATE</b> (plausibly useful; semantics or value unverified). Datum column: <b>N27</b> = server serves untransformed NAD27 labelled WGS84; client-side NTv2 correction applied (see TECHNICAL.md). <b>OK</b> = verified or pattern-consistent correct as served.</p>
+<p>The governing principle for inclusion: a source is used if it can change a Section E answer, a Section G verdict, or the referral forecast. Display-only and context sources are held to a lower bar; anything that could produce a false PASS is held to a higher one.</p>
+<hr>
+<h2>1. dnrmaps.gov.nl.ca — Geoscience Atlas (ArcGIS Server)</h2>
+<p>Intermittent 503s; all queries run with per-attempt timeouts and a patient retry. Three services proven to serve untransformed NAD27 (TECHNICAL.md).</p>
+<h3>Mineral_Lands (live tenure database) — datum N27, sentinel-guarded</h3>
+<table class="stack"><thead><tr><th>Layer</th><th>Content</th><th>Status</th><th>Use / reasoning</th></tr></thead><tbody>
+<tr><td data-l="layer">0 Map Staked Claims</td><td data-l="content">active mineral claims</td><td data-l="status">LIVE <code>claims</code></td><td data-l="use / reasoning">Mineral Lands referral: staked claims near the boundary are a tenure conflict interest</td></tr>
+<tr><td data-l="layer">5 Mineral Tenure</td><td data-l="content">mineral licences/leases</td><td data-l="status">LIVE <code>min_tenure</code></td><td data-l="use / reasoning">same referral line</td></tr>
+<tr><td data-l="layer">6 Quarries – New Applications</td><td data-l="content">pending quarry applications (points)</td><td data-l="status">LIVE <code>q_apps</code></td><td data-l="use / reasoning">competing-application awareness; TEN check and Quarries Section referral</td></tr>
+<tr><td data-l="layer">7 Quarries – Subordinate Permits</td><td data-l="content">subordinate permits</td><td data-l="status">LIVE <code>q_sub</code></td><td data-l="use / reasoning">same</td></tr>
+<tr><td data-l="layer">8 Quarries – Permits</td><td data-l="content">issued permits (points)</td><td data-l="status">LIVE <code>q_permits</code></td><td data-l="use / reasoning">same; layer also hosts the datum sentinel (permit 151600 pinned point)</td></tr>
+<tr><td data-l="layer">9 Quarries – Leases</td><td data-l="content">quarry leases</td><td data-l="status">LIVE <code>q_leases</code></td><td data-l="use / reasoning">same</td></tr>
+<tr><td data-l="layer">1–4 Original Boundaries / Historical Claims / Cancelled / Gazetted</td><td data-l="content">title history</td><td data-l="status">OMITTED</td><td data-l="use / reasoning">historical states do not bear on acceptance; current interests covered by 0/5</td></tr>
+<tr><td data-l="layer">10 Permits Expired Last Year</td><td data-l="content">recently expired permits</td><td data-l="status">CANDIDATE</td><td data-l="use / reasoning">a recently expired permit signals a renewal likely in flight (permits must be re-applied for within two months of expiry); could pre-warn a conflict the active layers miss. Not yet wired</td></tr>
+<tr><td data-l="layer">11 Quarries – Archive</td><td data-l="content">long-expired records</td><td data-l="status">OMITTED</td><td data-l="use / reasoning">no bearing on acceptance; noise risk in reports</td></tr>
+</tbody></table>
+<h3>Land_Use (referral layers) — datum N27, all corrected</h3>
+<table class="stack"><thead><tr><th>Layer</th><th>Content</th><th>Status</th><th>Use / reasoning</th></tr></thead><tbody>
+<tr><td data-l="layer">0 Protected Areas Plan 2020</td><td data-l="content">protected areas</td><td data-l="status">LIVE <code>lu_protected</code></td><td data-l="use / reasoning">parks/protected referral</td></tr>
+<tr><td data-l="layer">1 Specified Material Lands</td><td data-l="content">specified materials designations</td><td data-l="status">LIVE <code>lu_specified</code></td><td data-l="use / reasoning">dedicated referral line; a specified-material overlap changes what may be extracted</td></tr>
+<tr><td data-l="layer">2 LIL / 3 LISA</td><td data-l="content">Labrador Inuit Lands / Settlement Area</td><td data-l="status">LIVE <code>lu_lil</code> <code>lu_lisa</code></td><td data-l="use / reasoning">Nunatsiavut referral; work plans required on LIL</td></tr>
+<tr><td data-l="layer">4 Canadian Protected Conserved Areas</td><td data-l="content">CPCAD</td><td data-l="status">LIVE <code>lu_cpcad</code></td><td data-l="use / reasoning">parks/protected referral</td></tr>
+<tr><td data-l="layer">5 Public Water Supplies</td><td data-l="content">PWS areas</td><td data-l="status">LIVE <code>lu_pws</code></td><td data-l="use / reasoning">Water Resources referral; cross-checked against the NAD83-native AGOL twin (which also proved this service's datum defect, 573 polygons)</td></tr>
+<tr><td data-l="layer">6 Municipal Boundaries</td><td data-l="content">municipalities</td><td data-l="status">LIVE <code>lu_municipal</code></td><td data-l="use / reasoning">municipal plan governs land use inside</td></tr>
+<tr><td data-l="layer">7 Planning Areas</td><td data-l="content">planning areas incl. MPAB_LINK</td><td data-l="status">LIVE <code>lu_planning</code></td><td data-l="use / reasoning">links the governing plan document in reports</td></tr>
+<tr><td data-l="layer">8 Wind Energy Land Reserve</td><td data-l="content">wind reserve</td><td data-l="status">LIVE <code>lu_wind</code></td><td data-l="use / reasoning">dedicated referral line</td></tr>
+</tbody></table>
+<h3>Map_Layers — datum OK (verified via roads layer 13)</h3>
+<table class="stack"><thead><tr><th>Layer</th><th>Content</th><th>Status</th><th>Use / reasoning</th></tr></thead><tbody>
+<tr><td data-l="layer">13 Detailed Road Network</td><td data-l="content">NRN roads, 2008 vintage</td><td data-l="status">LIVE <code>roads_dnr</code></td><td data-l="use / reasoning">demoted to context only: datum correct but geometry outdated; Atlas 39/40 are primary for G3</td></tr>
+<tr><td data-l="layer">14 Resource Access Roads</td><td data-l="content">resource roads</td><td data-l="status">LIVE <code>res_roads_dnr</code></td><td data-l="use / reasoning">corroborates the G3 unnamed-road reclassification rule (≤120 m coincidence test)</td></tr>
+<tr><td data-l="layer">15 Nalcor Transmission Line</td><td data-l="content">NL Hydro lines</td><td data-l="status">LIVE <code>tx_nalcor</code></td><td data-l="use / reasoning">utility corridor referral</td></tr>
+<tr><td data-l="layer">16 Canvec Transmission Lines</td><td data-l="content">federal compilation</td><td data-l="status">LIVE <code>tx_canvec</code></td><td data-l="use / reasoning">same; wider coverage than 15</td></tr>
+<tr><td data-l="layer">1–3 Drill core/holes, MODS</td><td data-l="content">geology sampling, mineral occurrences</td><td data-l="status">OMITTED</td><td data-l="use / reasoning">exploration context, no acceptance or referral bearing</td></tr>
+<tr><td data-l="layer">4–10 grids</td><td data-l="content">NTS/UTM gridlines</td><td data-l="status">OMITTED</td><td data-l="use / reasoning">cartographic furniture</td></tr>
+<tr><td data-l="layer">11–12 regional road generalizations</td><td data-l="content">small-scale roads</td><td data-l="status">OMITTED</td><td data-l="use / reasoning">superseded by 13 and Atlas 39/40</td></tr>
+<tr><td data-l="layer">17–20 water lines</td><td data-l="content">display-scale water</td><td data-l="status">OMITTED</td><td data-l="use / reasoning">screening water comes from Topographic 12/13 and FFA inventory; these are cartographic</td></tr>
+<tr><td data-l="layer">21–24 border, contours</td><td data-l="content">outline, elevation</td><td data-l="status">OMITTED</td><td data-l="use / reasoning">no screening value</td></tr>
+</tbody></table>
+<h3>Topographic (1:50k NTS) — datum N27, corrected by pattern</h3>
+<table class="stack"><thead><tr><th>Layer</th><th>Content</th><th>Status</th><th>Use / reasoning</th></tr></thead><tbody>
+<tr><td data-l="layer">10 Building symbols</td><td data-l="content">1:50k building points</td><td data-l="status">LIVE <code>bldg_topo</code></td><td data-l="use / reasoning">G2 property/structures evidence, alongside Bing footprints; both incomplete, reports say so</td></tr>
+<tr><td data-l="layer">12 Watercourse lines</td><td data-l="content">streams</td><td data-l="status">LIVE <code>topo_wline</code></td><td data-l="use / reasoning">G5 stream counting (summarized, never itemized — predominantly dry at barrens sites) and the s.28 salmon-river conditional</td></tr>
+<tr><td data-l="layer">13 Waterbody polygons</td><td data-l="content">lakes/ponds</td><td data-l="status">LIVE <code>topo_wpoly</code></td><td data-l="use / reasoning">G5 verdicts and E5 itemization</td></tr>
+<tr><td data-l="layer">others</td><td data-l="content">contours, vegetation, misc topo</td><td data-l="status">OMITTED</td><td data-l="use / reasoning">no acceptance bearing</td></tr>
+</tbody></table>
+<p>Whole services omitted: <b>Bedrock/Surficial geology, Geochemistry, Geophysics</b> (material-quality prospecting context, not acceptance screening), <b>Indexes, Provincial_Base_Outline, Topo_CanMatrix, TopographyGreyBase</b> (cartographic). The Topographic service's map export endpoint doubles as the NL Topo <b>basemap</b> with per-tile NAD27 bbox shift.</p>
+<hr>
+<h2>2. GNL ArcGIS Online organization (services8.arcgis.com/aCyQID5qQcyrJMm2)</h2>
+<p>NAD83/Web Mercator native; fast (~0.4 s) and reliable. The organization's catalog was surveyed in full; entries below are everything with plausible screening value, then the notable omissions.</p>
+<h3>Quarry tenure and prohibitions</h3>
+<table class="stack"><thead><tr><th>Service</th><th>Content</th><th>Status</th><th>Use / reasoning</th></tr></thead><tbody>
+<tr><td data-l="service">No_Quarry_Permits_Available_VIEW/2</td><td data-l="content">s.5 NPA designations</td><td data-l="status">LIVE <code>npa_live</code></td><td data-l="use / reasoning">NPA check cross-check; live layer held 6 areas when the bundled snapshot held 5 — the live feed catches designations the snapshot misses</td></tr>
+<tr><td data-l="service">Quarry_Material_Exploration_License/3</td><td data-l="content">38 QMELs with licensee/status/expiry</td><td data-l="status">LIVE <code>qmel_live</code></td><td data-l="use / reasoning">supersedes the stale 2024-10-25 snapshot for currency; snapshot retained as cross-check</td></tr>
+<tr><td data-l="service">Quarry_Permits_and_Leases (dated)</td><td data-l="content">true boundary polygons + Boundary_Status</td><td data-l="status">LIVE <code>q_agol_mirror</code></td><td data-l="use / reasoning">Boundary_Status cross-check (Labrador "Unconfirmed/Unavailable" warning); also the ground truth that proved the Mineral_Lands datum defect (1,113 permits matched)</td></tr>
+<tr><td data-l="service">Proposed_Quarries_Boundaries_view/0</td><td data-l="content">431 pending application boundaries</td><td data-l="status">LIVE <code>q_proposed</code></td><td data-l="use / reasoning">competing applications with actual polygons, not just points</td></tr>
+</tbody></table>
+<h3>Roads and access</h3>
+<table class="stack"><thead><tr><th>Service</th><th>Content</th><th>Status</th><th>Use / reasoning</th></tr></thead><tbody>
+<tr><td data-l="service">FFA_ResourceRoads_NF/2, _LB/0</td><td data-l="content">FFA resource roads</td><td data-l="status">LIVE <code>res_roads_nf</code> <code>res_roads_lb</code></td><td data-l="use / reasoning">G3 reclassification corroboration</td></tr>
+<tr><td data-l="service">NRN_NL_7_0_ROADSEG/0</td><td data-l="content">NRN road segments</td><td data-l="status">LIVE <code>roads_nrn</code></td><td data-l="use / reasoning">demoted: only a 293-segment Labrador subset, discovered when it nearly caused a missed Route 470; retained for Labrador coverage only</td></tr>
+<tr><td data-l="service">TLH/0, CartwrightAccessRoad/0</td><td data-l="content">Trans-Labrador Hwy, Cartwright road</td><td data-l="status">LIVE <code>road_tlh</code> <code>road_cartwright</code></td><td data-l="use / reasoning">fill the Labrador gap the NRN subset leaves</td></tr>
+</tbody></table>
+<h3>Water</h3>
+<table class="stack"><thead><tr><th>Service</th><th>Content</th><th>Status</th><th>Use / reasoning</th></tr></thead><tbody>
+<tr><td data-l="service">FFA_LandCover/2,4,5 (+_LB/0,2,3)</td><td data-l="content">forestry-inventory streams, water lines, waterbodies</td><td data-l="status">LIVE <code>stream_*</code> <code>wline_*</code> <code>wbody_*</code></td><td data-l="use / reasoning">G5 primary polygons + stream counts; island/Labrador split</td></tr>
+<tr><td data-l="service">Public_Water_Supply_Areas/0</td><td data-l="content">NAD83-native PWS</td><td data-l="status">LIVE <code>pwsa</code></td><td data-l="use / reasoning">Water Resources referral; datum twin of lu_pws</td></tr>
+<tr><td data-l="service">Intakes_and_Wellheads/0</td><td data-l="content">intake/wellhead points</td><td data-l="status">LIVE <code>intakes</code></td><td data-l="use / reasoning">Water Resources referral</td></tr>
+<tr><td data-l="service">Water_Rights/0</td><td data-l="content">licensed water rights</td><td data-l="status">LIVE <code>water_rights</code></td><td data-l="use / reasoning">same</td></tr>
+<tr><td data-l="service">Natural_Drainage_Outside_Protected_Area/0</td><td data-l="content">drainage designations</td><td data-l="status">LIVE <code>nat_drain</code></td><td data-l="use / reasoning">same</td></tr>
+<tr><td data-l="service">Flood_Risk_Extents/0</td><td data-l="content">mapped flood extents</td><td data-l="status">LIVE <code>flood</code></td><td data-l="use / reasoning">same</td></tr>
+</tbody></table>
+<h3>Wetland / land cover</h3>
+<table class="stack"><thead><tr><th>Service</th><th>Content</th><th>Status</th><th>Use / reasoning</th></tr></thead><tbody>
+<tr><td data-l="service">FFA_LandCover/7 (+_LB/5)</td><td data-l="content">NFCODE non-forest classes</td><td data-l="status">LIVE <code>nonforest_*</code></td><td data-l="use / reasoning">G6: BOG/WBOG/TBOG only (confirmed coded-value domain); SB/RB are dry barren classes, excluded by rule</td></tr>
+</tbody></table>
+<h3>Forestry</h3>
+<table class="stack"><thead><tr><th>Service</th><th>Content</th><th>Status</th><th>Use / reasoning</th></tr></thead><tbody>
+<tr><td data-l="service">FFA_ForestPlanning/0,6</td><td data-l="content">AOP + FYOP commercial harvest blocks</td><td data-l="status">LIVE <code>fp_aop_harv</code> <code>fp_fyop_harv</code></td><td data-l="use / reasoning">committed timber allocations = forestry conflict referral</td></tr>
+<tr><td data-l="service">FFA_ForestPlanning/5,10</td><td data-l="content">silviculture treatment areas</td><td data-l="status">LIVE <code>fp_aop_silv</code> <code>fp_fyop_silv</code></td><td data-l="use / reasoning">silviculture investment = forestry conflict referral</td></tr>
+<tr><td data-l="service">FFA_ForestPlanning/11</td><td data-l="content">designated operating areas (3,828)</td><td data-l="status">LIVE <code>fp_oa</code></td><td data-l="use / reasoning">same</td></tr>
+<tr><td data-l="service">FFA_DomesticHarvestBlocks_NF/0, _LB/0</td><td data-l="content">domestic (firewood) blocks</td><td data-l="status">LIVE <code>domestic_nf</code> <code>domestic_lb</code></td><td data-l="use / reasoning">community cutting allocations referral</td></tr>
+<tr><td data-l="service">FFA_ForestManagementDistricts_NL/6</td><td data-l="content">district polygons</td><td data-l="status">LIVE <code>fmd</code></td><td data-l="use / reasoning">context: names the reviewing district office in the forestry advisory (MD_NAME can be null; number always renders)</td></tr>
+<tr><td data-l="service">FFA_Harvest_NF/_LB</td><td data-l="content">historical cutovers</td><td data-l="status">OMITTED</td><td data-l="use / reasoning">past harvest is not a referral conflict; would add noise</td></tr>
+<tr><td data-l="service">FFA_Wildfire, Defoliation, SBW treatment, BSFI photo year</td><td data-l="content">forest health/ops</td><td data-l="status">OMITTED</td><td data-l="use / reasoning">no permit bearing</td></tr>
+</tbody></table>
+<h3>Protected areas, buildings, survey</h3>
+<table class="stack"><thead><tr><th>Service</th><th>Content</th><th>Status</th><th>Use / reasoning</th></tr></thead><tbody>
+<tr><td data-l="service">Provincial_Protected_Areas/0, MMNPR/0</td><td data-l="content">protected/conserved areas</td><td data-l="status">LIVE <code>prov_protected</code> <code>mmnpr</code></td><td data-l="use / reasoning">parks referral</td></tr>
+<tr><td data-l="service">Bing_BuildingFootprints/0</td><td data-l="content">AI-extracted footprints</td><td data-l="status">LIVE <code>bldg_bing</code></td><td data-l="use / reasoning">G2 structures evidence; demonstrably incomplete, reports never assert absence</td></tr>
+<tr><td data-l="service">Control_Monuments_Public/0</td><td data-l="content">NLGN monuments</td><td data-l="status">LIVE <code>nlgn</code></td><td data-l="use / reasoning">Survey Control table (nearest three) + GIS &amp; Mapping Division referral (5 m buffer, Lands Act s.65)</td></tr>
+<tr><td data-l="service">AgricultureBoundaries/8</td><td data-l="content">agriculture development/RFP areas</td><td data-l="status">LIVE <code>agri_rfp</code></td><td data-l="use / reasoning">agriculture referral</td></tr>
+</tbody></table>
+<h3>Notable AGOL omissions and candidates</h3>
+<table class="stack"><thead><tr><th>Service</th><th>Content</th><th>Status</th><th>Reasoning</th></tr></thead><tbody>
+<tr><td data-l="service">ILUC_InScopeAreas, ILUC_Water_Supplies</td><td data-l="content">interim land use control areas (apparent)</td><td data-l="status">CANDIDATE</td><td data-l="reasoning">name suggests interim land-use restrictions that could bind a site; semantics unverified — inspect before wiring</td></tr>
+<tr><td data-l="service">Proposed_ERWPP</td><td data-l="content">proposed reserve/protected area (apparent)</td><td data-l="status">CANDIDATE</td><td data-l="reasoning">a *proposed* protected area is exactly the kind of conflict worth flagging early; semantics unverified</td></tr>
+<tr><td data-l="service">LandslideSites</td><td data-l="content">mapped landslide sites</td><td data-l="status">CANDIDATE</td><td data-l="reasoning">site-hazard advisory value, not a referral; low priority</td></tr>
+<tr><td data-l="service">WLD_BigGameManagementArea</td><td data-l="content">game management zones</td><td data-l="status">OMITTED</td><td data-l="reasoning">hunting administration; no permit bearing</td></tr>
+<tr><td data-l="service">Dams, Municipal_Dams, Sewage_Outfalls, Electrical_Substations</td><td data-l="content">point infrastructure</td><td data-l="status">OMITTED</td><td data-l="reasoning">referral interests already covered at the corridor/area level; point features add noise without changing outcomes</td></tr>
+<tr><td data-l="service">Domestic well / water chemistry series (As, Fe, Mn, U…)</td><td data-l="content">well water quality sampling</td><td data-l="status">OMITTED</td><td data-l="reasoning">public-health sampling, not siting data</td></tr>
+<tr><td data-l="service">WaveRunup series, Coastal monitoring</td><td data-l="content">coastal hazard</td><td data-l="status">OMITTED</td><td data-l="reasoning">no quarry acceptance bearing; revisit only for shoreline sites</td></tr>
+<tr><td data-l="service">Climate projections, EcoRegions, elections, ferries, schools/health (Southwest series), GMD_GeoNames</td><td data-l="content">context/demographics</td><td data-l="status">OMITTED</td><td data-l="reasoning">no bearing</td></tr>
+</tbody></table>
+<hr>
+<h2>3. Crown Land Use Atlas (gov.nl.ca/landuseatlasmaps, LandUseDetails MapServer)</h2>
+<p>Datum verified correct as served. Server rejects non-browser user agents and is unreachable from the build environment — layers here are browser-verified only; attribute schemas for the nine newest additions are unconfirmed (nameFields are a best-guess cascade; hits fall back to OBJECTID display).</p>
+<table class="stack"><thead><tr><th>Layer</th><th>Content</th><th>Status</th><th>Use / reasoning</th></tr></thead><tbody>
+<tr><td data-l="layer">2 Applications for Crown Title</td><td data-l="content">pending Crown applications</td><td data-l="status">LIVE <code>crown_apps</code></td><td data-l="use / reasoning">competing-interest referral + G1 evidence</td></tr>
+<tr><td data-l="layer">3 Crown Titles</td><td data-l="content">issued titles (APPLICANT/TITLENO/TITLETYPE)</td><td data-l="status">LIVE <code>crown_titles</code></td><td data-l="use / reasoning">G1 primary; TITLETYPE distinguishes interest kinds</td></tr>
+<tr><td data-l="layer">8 Bowater Land Sales</td><td data-l="content">paper-company land dispositions</td><td data-l="status">LIVE <code>cl_bowater</code></td><td data-l="use / reasoning">third-party timber/land rights: Bowater parcels trace mill-era dispositions whose title may sit outside ordinary Crown tenure</td></tr>
+<tr><td data-l="layer">30 Forestry</td><td data-l="content">forestry land-use interest areas</td><td data-l="status">LIVE <code>cl_forestry</code></td><td data-l="use / reasoning">departmental flag layer; joins Bowater in the timber-interest referral</td></tr>
+<tr><td data-l="layer">29 Wildlife</td><td data-l="content">wildlife interest areas</td><td data-l="status">LIVE <code>cl_wildlife</code></td><td data-l="use / reasoning">mapped complement to the not-public occurrence data</td></tr>
+<tr><td data-l="layer">28 Nalcor Hydro and NF Power</td><td data-l="content">utility interest areas</td><td data-l="status">LIVE <code>cl_hydro</code></td><td data-l="use / reasoning">utility referral (areas, complementing the transmission lines)</td></tr>
+<tr><td data-l="layer">27 Agriculture</td><td data-l="content">agriculture interest areas</td><td data-l="status">LIVE <code>cl_agri</code></td><td data-l="use / reasoning">agriculture referral</td></tr>
+<tr><td data-l="layer">22 Mines and Energy</td><td data-l="content">department interest areas</td><td data-l="status">LIVE <code>cl_mines</code></td><td data-l="use / reasoning">Mineral Lands referral</td></tr>
+<tr><td data-l="layer">18 Tourism, Culture, Arts and Recreation</td><td data-l="content">tourism interest areas</td><td data-l="status">LIVE <code>cl_tourism</code></td><td data-l="use / reasoning">tourism referral</td></tr>
+<tr><td data-l="layer">25 Federal Lands</td><td data-l="content">federal parcels</td><td data-l="status">LIVE <code>cl_federal</code></td><td data-l="use / reasoning">provincial quarry tenure cannot issue over federal land</td></tr>
+<tr><td data-l="layer">37 Municipal Plan Restrictions</td><td data-l="content">plan restriction polygons</td><td data-l="status">LIVE <code>cl_mpr</code></td><td data-l="use / reasoning">municipal/MPAB referral</td></tr>
+<tr><td data-l="layer">38 Protected Road Zones</td><td data-l="content">PRZ polygons</td><td data-l="status">LIVE <code>lu_prz</code></td><td data-l="use / reasoning">90 m protected-road check (live complement to the bundled Municipal Affairs snapshot)</td></tr>
+<tr><td data-l="layer">39/40 Primary/Secondary Roads</td><td data-l="content">Atlas road network</td><td data-l="status">LIVE <code>lu_roads_p</code> <code>lu_roads_s</code></td><td data-l="use / reasoning"><b>G3 primary road source</b> (current geometry, ROADCLASS drives the reclassification rule)</td></tr>
+<tr><td data-l="layer">0 Control Monuments</td><td data-l="content">monuments</td><td data-l="status">OMITTED</td><td data-l="use / reasoning">duplicate; AGOL NLGN layer is richer (adjustment dates, elevations)</td></tr>
+<tr><td data-l="layer">4–7, 9–10 Expropriated / OIC / Quieting / Quit Claims / Titles to Check / Misc</td><td data-l="content">title-history evidence</td><td data-l="status">CANDIDATE</td><td data-l="use / reasoning">current operative interests flow through layers 2/3; these matter for title research on contested ground (e.g. inside Bowater areas). Worth wiring if title-chain questions recur</td></tr>
+<tr><td data-l="layer">13/14 Indigenous 1 / Indigenous 2</td><td data-l="content">island-side Indigenous areas (apparent)</td><td data-l="status">CANDIDATE</td><td data-l="use / reasoning">semantics unknown (possibly reserve or asserted-interest areas); Labrador consultation is handled, island-side is not — verify in browser and wire if real</td></tr>
+<tr><td data-l="layer">15–17, 19–21, 23–24 Water Resources / Service NL / T&amp;I / Parks / Natural Areas / Other / Lands / Municipal Affairs</td><td data-l="content">departmental interest areas</td><td data-l="status">OMITTED (17 CANDIDATE)</td><td data-l="use / reasoning">duplicative of existing dedicated checks, except 17 Transportation and Infrastructure, which could ground the highway-access advisory in mapped data</td></tr>
+<tr><td data-l="layer">26 Aquaculture</td><td data-l="content">aquaculture interest areas</td><td data-l="status">OMITTED</td><td data-l="use / reasoning">marginal for quarries; revisit for coastal sites</td></tr>
+<tr><td data-l="layer">31–35 Flood Risk</td><td data-l="content">flood extents</td><td data-l="status">OMITTED</td><td data-l="use / reasoning">AGOL Flood_Risk_Extents already queried</td></tr>
+<tr><td data-l="layer">36, 41 Admin boundaries, Places</td><td data-l="content">reference</td><td data-l="status">OMITTED</td><td data-l="use / reasoning">no bearing</td></tr>
+</tbody></table>
+<p>The same host's <b>NLImagery</b> tile service is one of the four basemaps.</p>
+<hr>
+<h2>4. Bundled snapshots (<code>/data</code>)</h2>
+<table class="stack"><thead><tr><th>File</th><th>Upstream</th><th>Status</th><th>Use / reasoning</th></tr></thead><tbody>
+<tr><td data-l="file">protected_roads.geojson</td><td data-l="upstream">Municipal Affairs KMZ (2026-08-11)</td><td data-l="status">BUNDLED</td><td data-l="use / reasoning">429 protected roads / 853 polygons; G3 protected-road identification where the live PRZ layer is thin</td></tr>
+<tr><td data-l="file">building_control.geojson</td><td data-l="upstream">Municipal Affairs KMZ (2026-08-11)</td><td data-l="status">BUNDLED</td><td data-l="use / reasoning">G4 corridor polygons; overlap reported as containment, never "line 0 m away"</td></tr>
+<tr><td data-l="file">no_permit_areas.geojson</td><td data-l="upstream">Energy and Mines quarries site KMZ (2026-08-13)</td><td data-l="status">BUNDLED</td><td data-l="use / reasoning">NPA cross-check against the live layer; live layer already ahead of it (6 vs 5 areas)</td></tr>
+<tr><td data-l="file">qmels.geojson</td><td data-l="upstream">Energy and Mines quarries site KMZ (dated 2024-10-25)</td><td data-l="status">BUNDLED (STALE)</td><td data-l="use / reasoning">retained only as cross-check under a stale banner; live QMEL layer is current</td></tr>
+<tr><td data-l="file">quarry_tenure_snapshot.geojson</td><td data-l="upstream">Energy and Mines quarries site KMZ (2026-08-13)</td><td data-l="status">BUNDLED</td><td data-l="use / reasoning">1,340 true boundary polygons; TEN overlap check and the regression anchor's ground truth</td></tr>
+<tr><td data-l="file">nad27_shift.json</td><td data-l="upstream">derived from the NRCan NTv2 grid (0.5° lattice)</td><td data-l="status">BUNDLED</td><td data-l="use / reasoning">the datum correction itself; &lt;1 m interpolation error, validated against permit 151600 and 1,113-permit province-wide matching</td></tr>
+</tbody></table>
+<p>Snapshots carry dates; anything older than 180 days trips a stale banner.</p>
+<h2>5. Basemaps (display only)</h2>
+<table class="stack"><thead><tr><th>Basemap</th><th>Source</th><th>Reasoning</th></tr></thead><tbody>
+<tr><td data-l="basemap">Esri World Topo Map</td><td data-l="source">services.arcgisonline.com</td><td data-l="reasoning">default — matches the NL Land Use Atlas's own default; there is no official provincial raster basemap</td></tr>
+<tr><td data-l="basemap">Esri World Imagery + NLImagery overlay</td><td data-l="source">Esri + Crown atlas tiles</td><td data-l="reasoning">imagery view as the Atlas presents it</td></tr>
+<tr><td data-l="basemap">OpenStreetMap</td><td data-l="source">OSM tiles</td><td data-l="reasoning">familiar reference</td></tr>
+<tr><td data-l="basemap">NL provincial topo + roads</td><td data-l="source">dnrmaps Topographic export</td><td data-l="reasoning">provincial cartography; per-tile bbox shift applies the NAD27 correction</td></tr>
+</tbody></table>
+<h2>6. Reference documents and validation sources (not map services)</h2>
+<table class="stack"><thead><tr><th>Source</th><th>Use</th></tr></thead><tbody>
+<tr><td data-l="source">Form MLD-Q-QP-A (rev 2025/10/31)</td><td data-l="use">the screening target: Sections E and G acceptance criteria</td></tr>
+<tr><td data-l="source">Environmental Assessment Regulations, 2003 (NLR 54/03)</td><td data-l="use">computed rules: s.33(3) 10 ha registration threshold, s.28 scheduled salmon rivers 200 m, s.52 aggregation</td></tr>
+<tr><td data-l="source">EA 2396 departmental advice record (Peak Pond Quarry Extension)</td><td data-l="use">wording source for the standing authorizations block</td></tr>
+<tr><td data-l="source">NRCan NTv2 transformation grid</td><td data-l="use">validation of the bundled shift lattice</td></tr>
+<tr><td data-l="source">Permit 151600 / file 71113200 records</td><td data-l="use">regression anchor and datum sentinel ground truth</td></tr>
+</tbody></table>
+<hr>
+<h2>Open verification items</h2>
+<p class="li">&bull; Crown layers 8/18/22/25/27/28/29/30/37: field names browser-verified only —</p>
+<p>confirm a live report shows named hits, correct the nameFields cascade if not.</p>
+<p class="li">&bull; CANDIDATE rows above (ILUC, Proposed_ERWPP, Mineral_Lands/10, Crown 4–10,</p>
+<p>Crown 13/14, Crown 17, LandslideSites): inspect semantics before wiring.</p>
+<hr>
+<p class="top">Maintained in the repository as
+<a href="https://github.com/dbpittman/QuarryCheck/blob/main/DATASOURCES.md">DATASOURCES.md</a>;
+this page is generated from it. &copy; 2026 D. Pittman &middot;
+<a href="https://github.com/dbpittman/QuarryCheck/blob/main/LICENSE">MIT License</a> &middot;
+Not affiliated with the Government of Newfoundland and Labrador.</p>
+</div>
+</body>
+</html>
