@@ -97,6 +97,15 @@ footer{margin-top:48px;border-top:2px solid var(--ink);padding-top:10px;font-siz
   .rulebar{font-size:.66rem}
   #map{height:420px}
 }
+#toolrow{margin:10px 0 0;font-size:.85rem}
+#decl{display:block;margin-bottom:8px;cursor:pointer}
+#decl input{margin-right:6px}
+#drawrow,#adjrow{margin-top:6px}
+#toolrow button{font-family:var(--mono);font-size:.78rem;padding:5px 10px;cursor:pointer;background:var(--paper);border:1px solid var(--ink)}
+#toolrow button:hover{background:var(--ink);color:var(--paper)}
+#drawhint,#adjhint{color:var(--dim);margin-left:8px}
+#map.drawing .maplibregl-canvas{cursor:crosshair!important}
+@media print{#toolrow{display:none!important}}
 #mapprint{display:none}
 .printonly{display:none}
 @media print{
@@ -145,6 +154,23 @@ footer{margin-top:48px;border-top:2px solid var(--ink);padding-top:10px;font-siz
   <input id="file" type="file" accept=".kmz,.kml,.zip" hidden>
 </div>
 
+<div id="toolrow">
+  <label id="decl"><input type="checkbox" id="declfar">
+    Operator declaration: the nearest road serving this site is a <b>forest access road</b>
+    (unnamed road hits move from G3's 50 m to G2's 15 m setback; the declaration prints with the report)</label>
+  <div id="drawrow">No boundary file yet? <button type="button" id="drawbtn">Draw a boundary on the map</button>
+    <span id="drawctl" style="display:none">
+      <button type="button" id="drawfinish">Finish (close polygon)</button>
+      <button type="button" id="drawcancel">Cancel</button>
+      <span class="small" id="drawhint">Click the map to place vertices (3 minimum), then Finish.</span>
+    </span>
+  </div>
+  <div id="adjrow" style="display:none">
+    <button type="button" id="adjbtn">Adjust boundary (drag to move)</button>
+    <button type="button" id="rescreenbtn" style="display:none">Re-screen adjusted boundary</button>
+    <span class="small" id="adjhint"></span>
+  </div>
+</div>
 <div id="err"></div>
 <div id="progress"></div>
 <div id="mapbar"></div>
@@ -226,10 +252,11 @@ function extractBoundary(fc){
 }
 
 let map = null;
-function showMap(boundary, access){
+function showMap(boundary, access, blank){
   $('#mapbar').style.display='flex';
   $('#map').style.display='block';
-  const bbox = turf.bbox(turf.buffer(boundary, 0.5, {units:'kilometers'}));
+  const bbox = blank ? [-60.2,46.5,-52.2,54.6]
+                     : turf.bbox(turf.buffer(boundary, 0.5, {units:'kilometers'}));
   if (!map) {
     const shiftTopoBbox = (url) => {
       try {
@@ -286,7 +313,7 @@ function showMap(boundary, access){
           { id:'landuse', type:'raster', source:'landuse', layout:{ visibility:'none' } } ] },
       bounds: (window._lastFitBbox = bbox), fitBoundsOptions:{ padding:30 }
     });
-    map.on('load', () => { addLayers(boundary, access); schedulePrintCapture(); });
+    map.on('load', () => { if (!blank) { addLayers(boundary, access); schedulePrintCapture(); } });
     // basemap cycle: Atlas Topo -> Atlas Imagery -> OSM -> NL provincial stack
     const BASEMAPS = [
       { label:'NL Imagery', on:['nlimg'] },
@@ -351,11 +378,13 @@ function showMap(boundary, access){
       if (map.getLayer('road-names')) map.setLayoutProperty('road-names','visibility', namesOn?'visible':'none');
     };
     document.getElementById('mapbar').appendChild(nm);
-  } else {
+  } else if (!blank) {
     addLayers(boundary, access);
     window._lastFitBbox = bbox;
     map.fitBounds(bbox, { padding:30 });
     schedulePrintCapture();
+  } else {
+    map.fitBounds(bbox, { padding:30 });
   }
 }
 function addLayers(boundary, access){
@@ -388,10 +417,27 @@ function addLayers(boundary, access){
 
 async function handleFile(file){
   clearErr();
-  $('#results').innerHTML=''; $('#stamp').style.display='none'; $('#printbtn').style.display='none';
   try {
     const fc = await parseUpload(file);
     const { boundary, access, polyCount } = extractBoundary(fc);
+    await screenBoundary(boundary, access, { fileName: file.name, polyCount });
+  } catch (e) {
+    prog.style.display='none';
+    $('#map').classList.remove('busy');
+    $('#stamp').style.display='none';
+    showErr('Could not screen this file: ' + (e.message||e));
+    console.error(e);
+  }
+}
+
+async function screenBoundary(boundary, access, meta){
+  clearErr();
+  $('#results').innerHTML=''; $('#stamp').style.display='none'; $('#printbtn').style.display='none';
+  $('#mapprint').innerHTML='';
+  endAdjust(); endDraw();
+  window._acc = access; window._runName = meta.fileName;
+  try {
+    const polyCount = meta.polyCount || 1;
     try { await loadShiftLattice((u,o)=>fetch(u,o)); } catch(e){}
     const areaHa = (turf.area(boundary)/10000).toFixed(2);
     showMap(boundary, access);
@@ -406,26 +452,144 @@ async function handleFile(file){
     let done=0, failed=[];
     const t0 = Date.now();
     window._bnd = boundary;
+    const opts = { declarations: { forestAccessRoad: $('#declfar').checked } };
     const out = await runScreen(boundary, (u,o)=>fetch(u,o), r => {
       done++;
       if (!r.ok && !r.missing) failed.push(r.id);
       stamp.querySelector('.dtl').textContent = `${done} of ${total} provincial sources answered`
         + (failed.length? ` (${failed.length} unreachable)` : '') + '.';
-    });
+    }, opts);
     $('#map').classList.remove('busy');
     drawHits(out);
     if (map.isStyleLoaded()) drawWaterTie(out); else map.once('idle', ()=>drawWaterTie(out));
     prog.textContent = `Completed in ${((Date.now()-t0)/1000).toFixed(1)} s. `
       + (failed.length? `Unreachable sources: ${failed.join(', ')} — affected checks are marked ADVISORY.` : 'All sources answered.');
-    render(out, { areaHa, fileName: file.name });
+    render(out, { areaHa, fileName: meta.fileName });
+    $('#adjrow').style.display='block';
+    $('#rescreenbtn').style.display='none';
+    $('#adjhint').textContent='';
   } catch (e) {
     prog.style.display='none';
     $('#map').classList.remove('busy');
     $('#stamp').style.display='none';
-    showErr('Could not screen this file: ' + (e.message||e));
+    showErr('Could not screen this boundary: ' + (e.message||e));
     console.error(e);
   }
 }
+
+/* ---------------- draw a boundary ---------------- */
+let drawPts = null;
+function drawSrc(){
+  const fc = { type:'FeatureCollection', features: [] };
+  if (drawPts && drawPts.length) {
+    fc.features.push({ type:'Feature', properties:{}, geometry:{ type:'MultiPoint', coordinates: drawPts } });
+    if (drawPts.length >= 2) fc.features.push({ type:'Feature', properties:{}, geometry:{ type:'LineString', coordinates: drawPts.concat(drawPts.length>2?[drawPts[0]]:[]) } });
+  }
+  return fc;
+}
+function refreshDraw(){
+  if (map.getSource('draw')) map.getSource('draw').setData(drawSrc());
+}
+function onDrawClick(e){
+  drawPts.push([e.lngLat.lng, e.lngLat.lat]);
+  $('#drawhint').textContent = `${drawPts.length} vertex(es).` + (drawPts.length>=3 ? ' Finish to close and screen.' : ' 3 minimum.');
+  refreshDraw();
+}
+function startDraw(){
+  showMap(null, [], true);
+  drawPts = [];
+  $('#drawbtn').style.display='none';
+  $('#drawctl').style.display='inline';
+  $('#map').classList.add('drawing');
+  map.doubleClickZoom.disable();
+  const arm = () => {
+    if (!map.getSource('draw')) {
+      map.addSource('draw', { type:'geojson', data: drawSrc() });
+      map.addLayer({ id:'draw-line', type:'line', source:'draw', paint:{ 'line-color':'#0A84FF','line-width':2.5,'line-dasharray':[2,1.5] } });
+      map.addLayer({ id:'draw-pts', type:'circle', source:'draw', paint:{ 'circle-radius':4.5,'circle-color':'#0A84FF','circle-stroke-color':'#fff','circle-stroke-width':1.5 } });
+    }
+    map.on('click', onDrawClick);
+  };
+  if (map.isStyleLoaded()) arm(); else map.once('load', arm);
+}
+function endDraw(){
+  if (drawPts === null) return;
+  drawPts = null;
+  $('#drawbtn').style.display='inline-block';
+  $('#drawctl').style.display='none';
+  $('#map').classList.remove('drawing');
+  if (map) {
+    map.off('click', onDrawClick);
+    try { map.doubleClickZoom.enable(); } catch(e){}
+    ['draw-pts','draw-line'].forEach(id => { if (map.getLayer(id)) map.removeLayer(id); });
+    if (map.getSource('draw')) map.removeSource('draw');
+  }
+}
+async function finishDraw(){
+  if (!drawPts || drawPts.length < 3) { $('#drawhint').textContent='Need at least 3 vertices.'; return; }
+  const ring = drawPts.concat([drawPts[0]]);
+  const poly = turf.cleanCoords(turf.polygon([ring]));
+  const ha = (turf.area(poly)/10000).toFixed(2);
+  endDraw();
+  await screenBoundary(poly, [], { fileName:`Drawn boundary (${ha} ha)` });
+}
+
+/* ---------------- adjust (drag to move) ---------------- */
+let adjActive = false, adjDrag = null, adjBase = null, adjMoved = 0;
+function translatePoly(poly, dLng, dLat){
+  const walk = c => (typeof c[0] === 'number') ? [c[0]+dLng, c[1]+dLat] : c.map(walk);
+  return { type:'Feature', properties: poly.properties||{}, geometry:{ type: poly.geometry.type, coordinates: walk(poly.geometry.coordinates) } };
+}
+function onAdjDown(e){
+  if (!adjActive || !window._bnd) return;
+  const p = turf.point([e.lngLat.lng, e.lngLat.lat]);
+  let inside = false;
+  try { turf.flattenEach(window._bnd, f => { if (turf.booleanPointInPolygon(p, f)) inside = true; }); } catch(err){}
+  if (!inside) return;
+  adjDrag = { start:[e.lngLat.lng, e.lngLat.lat], base: JSON.parse(JSON.stringify(window._bnd)) };
+  map.dragPan.disable();
+  e.preventDefault();
+}
+function onAdjMove(e){
+  if (!adjDrag) return;
+  const dLng = e.lngLat.lng - adjDrag.start[0], dLat = e.lngLat.lat - adjDrag.start[1];
+  window._bnd = translatePoly(adjDrag.base, dLng, dLat);
+  if (map.getSource('bnd')) map.getSource('bnd').setData(window._bnd);
+}
+function onAdjUp(){
+  if (!adjDrag) return;
+  adjDrag = null;
+  map.dragPan.enable();
+  adjMoved = adjBase ? Math.round(turf.distance(turf.centroid(adjBase), turf.centroid(window._bnd), {units:'kilometers'})*1000) : 0;
+  if (adjMoved > 0) {
+    $('#rescreenbtn').style.display='inline-block';
+    $('#adjhint').textContent = `Boundary moved ${adjMoved} m from the screened position. Rings and measurements are stale until re-screened.`;
+  }
+}
+function startAdjust(){
+  if (!map || !window._bnd) return;
+  adjActive = true; adjBase = JSON.parse(JSON.stringify(window._bnd));
+  $('#adjbtn').textContent='Stop adjusting';
+  $('#adjhint').textContent='Drag inside the boundary to move it. Named setbacks refresh on re-screen.';
+  map.on('mousedown', onAdjDown); map.on('mousemove', onAdjMove); map.on('mouseup', onAdjUp);
+}
+function endAdjust(){
+  if (!adjActive) return;
+  adjActive = false; adjDrag = null;
+  $('#adjbtn').textContent='Adjust boundary (drag to move)';
+  if (map) { map.off('mousedown', onAdjDown); map.off('mousemove', onAdjMove); map.off('mouseup', onAdjUp); try { map.dragPan.enable(); } catch(e){} }
+}
+document.addEventListener('DOMContentLoaded', () => {
+  $('#drawbtn').onclick = startDraw;
+  $('#drawfinish').onclick = finishDraw;
+  $('#drawcancel').onclick = endDraw;
+  $('#adjbtn').onclick = () => adjActive ? endAdjust() : startAdjust();
+  $('#rescreenbtn').onclick = () => {
+    const name = (window._runName||'boundary').replace(/ \(adjusted.*\)$/,'');
+    endAdjust();
+    screenBoundary(window._bnd, window._acc||[], { fileName:`${name} (adjusted ${adjMoved} m)` });
+  };
+});
 
 /* Map palette: tuned for legibility over dark orthoimagery.
    Warm = features/conflicts; cool/neutral = reference geometry; all lines cased. */
@@ -745,6 +909,8 @@ function render(out, meta){
   }
 
   h += '</section><section class="rpt"><h2>Datum audit</h2><p class="note">Reference frame: NAD83(CSRS), the provincial survey datum realized by the NL Geodetic Network. What each source\'s coordinates actually are, how that was verified, and what was done about it:</p>';
+  if (out.declarations && out.declarations.forestAccessRoad)
+    h += '<p class="note" style="font-weight:600">Operator declaration recorded for this run: the nearest road serving this site is a forest access road. Unnamed road hits within 50 m were assessed under the 15 m G2 setback on that declaration (see G3 notes). Repeat the declaration in the application.</p>';
   { const sw = out.snapshotWarnings || [];
     const staleList = sw.filter(w => w.stale);
     if (staleList.length) h += `<p class="note" style="color:#b60;font-weight:600">STALE SNAPSHOTS: ${staleList.map(w => `${esc(w.note)} — ${w.snapshot} (${Math.round(w.ageDays/30)} months old)`).join('; ')}. Refresh these files (tools/kmz_to_geojson.py) before relying on their checks.</p>`;

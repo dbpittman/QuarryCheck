@@ -188,6 +188,31 @@ async function main() {
     ok(ten2.verdict !== 'ENCROACHES', `clean site does not trip TEN (${ten2.verdict})`);
   }
 
+  console.log('\n[11] snapshot names + operator declaration');
+  {
+    const snapRes = await app.loadBundled(app.BUNDLED.find(s => s.id === 'q_snapshot'), boundary, fetchFn);
+    const g = app.runSectionG(boundary, { q_snapshot: snapRes });
+    const ten = g.find(c => c.id === 'TEN');
+    const note = (ten.notes||[]).join(' ');
+    ok(/Pittman's Enterprises/.test(note), 'TEN names the holder from the snapshot');
+    ok(/permit \d+/.test(note), 'TEN carries the permit number from the description');
+    // declaration: unnamed uncorroborated road within 50 m
+    const road = { type:'Feature', properties:{ ROADCLASS:'Collector' },
+      geometry:{ type:'LineString', coordinates:[[-58.7530,47.6086],[-58.7515,47.6090]] } };
+    const roadsRes = { id:'lu_roads_p', ok:true, queried:new Date().toISOString(),
+      src:{ id:'lu_roads_p', note:'Primary roads', authority:'test', nameFields:['ROADNAME'] }, features:[road] };
+    const gNo = app.runSectionG(boundary, { lu_roads_p: roadsRes });
+    const gYes = app.runSectionG(boundary, { lu_roads_p: roadsRes }, { declarations:{ forestAccessRoad:true } });
+    const g3no = gNo.find(c=>c.id==='G3'), g3yes = gYes.find(c=>c.id==='G3');
+    ok(g3no.verdict === 'ENCROACHES', `undeclared unnamed road inside 50 m fails G3 (${g3no.verdict})`);
+    ok(g3yes.verdict === 'ADVISORY', `declaration reclassifies it to ADVISORY (${g3yes.verdict})`);
+    ok(/OPERATOR DECLARATION/.test((g3yes.notes||[]).join(' ')), 'declaration recorded in G3 notes');
+    // a named road must resist the declaration
+    const named = { type:'Feature', properties:{ ROADNAME:'Route 470', ROADCLASS:'Collector' }, geometry: road.geometry };
+    const gNamed = app.runSectionG(boundary, { lu_roads_p: { ...roadsRes, features:[named] } }, { declarations:{ forestAccessRoad:true } });
+    ok(gNamed.find(c=>c.id==='G3').verdict === 'ENCROACHES', 'named road ignores the declaration');
+  }
+
   console.log(`\n${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
 }

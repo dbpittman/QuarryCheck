@@ -96,15 +96,15 @@ const NLGN_SOURCE = { id:'nlgn', url:`${AGOL}/Control_Monuments_Public/FeatureSe
 
 /* Bundled snapshots (no live source exists / hand-maintained upstream) */
 const BUNDLED = [
-  { id:'protected_roads', path:'data/protected_roads.geojson', queryDist:200, snapshot:'2026-08-11',
+  { id:'protected_roads', nameFields:['name'], path:'data/protected_roads.geojson', queryDist:200, snapshot:'2026-08-11',
     authority:'Municipal Affairs KMZ, snapshot 2026-08-11', note:'Protected Road zoning polygons (429 roads, 853 polygons)' },
-  { id:'building_control', path:'data/building_control.geojson', queryDist:200, snapshot:'2026-08-11',
+  { id:'building_control', nameFields:['name'], path:'data/building_control.geojson', queryDist:200, snapshot:'2026-08-11',
     authority:'Municipal Affairs KMZ, snapshot 2026-08-11', note:'Building control areas (corridor polygons) along protected roads' },
-  { id:'no_permit_areas', path:'data/no_permit_areas.geojson', queryDist:200, snapshot:'2026-08-13',
+  { id:'no_permit_areas', nameFields:['name'], path:'data/no_permit_areas.geojson', queryDist:200, snapshot:'2026-08-13',
     authority:'IET quarries site KMZ, snapshot 2026-08-13', note:'No Permits Available areas, s.5 Quarry Materials Regulations (5 designated areas). Listing is province-described work-in-progress; absence of a polygon is not proof none exists.' },
-  { id:'qmels', path:'data/qmels.geojson', queryDist:500, snapshot:'2024-10-25',
+  { id:'qmels', nameFields:['name'], path:'data/qmels.geojson', queryDist:500, snapshot:'2024-10-25',
     authority:'IET quarries site KMZ, dated 2024-10-25 (STALE: many licences since expired or issued)', note:'Quarry Materials Exploration Licences' },
-  { id:'q_snapshot', path:'data/quarry_tenure_snapshot.geojson', queryDist:500, snapshot:'2026-08-13',
+  { id:'q_snapshot', nameFields:['name'], path:'data/quarry_tenure_snapshot.geojson', queryDist:500, snapshot:'2026-08-13',
     authority:'IET quarries site KMZ, snapshot 2026-08-13; datum-verified against permit 151600 (104.7 m to Route 470 vs ~100 m ground truth, area 2.00 ha exact)', note:'Quarry permit/lease boundary polygons (1,340)' },
 ];
 
@@ -446,7 +446,8 @@ function corroborated(hit, results, tol) {
 }
 
 /* Section G. Returns array of check objects. */
-function runSectionG(boundary, results) {
+function runSectionG(boundary, results, opts) {
+  opts = opts || {};
   const checks = [];
   const failed = ids => sourceStatus(results, ids).some(s => !s.ok);
 
@@ -496,11 +497,13 @@ function runSectionG(boundary, results) {
       return false;
     };
     const within = collectWithin(boundary, results, ids, 50);
-    const firm = [], overridden = [];
+    const decl = !!(opts.declarations && opts.declarations.forestAccessRoad);
+    const firm = [], overridden = [], declOverridden = [];
     for (const h of within) {
       const declaredResource = /resource/i.test(String((h.feature.properties||{}).ROADCLASS||''));
       if (!isNamed(h.feature) && !isPavedClass(h.feature) && (declaredResource || coincidesResource(h.feature)))
         overridden.push(h);
+      else if (decl && !isNamed(h.feature) && !isPavedClass(h.feature)) { overridden.push(h); declOverridden.push(h); }
       else firm.push(h);
     }
     const nAll = nearest(boundary, results, ids);
@@ -509,7 +512,9 @@ function runSectionG(boundary, results) {
     if (firm.length) { v = 'ENCROACHES'; }
     else if (overridden.length) {
       v = 'ADVISORY';
-      notes.push(`${overridden.length} unnamed road hit(s) within 50 m reclassified as forest access road(s): the province's FFA resource-roads layer maps the same alignment (or the Atlas classes it Resource/Recreation). The 15 m G2 setback governs these; see G2. Confirm classification with the Quarries Section.`);
+      const corrob = overridden.length - declOverridden.length;
+      if (corrob) notes.push(`${corrob} unnamed road hit(s) within 50 m reclassified as forest access road(s): the province's FFA resource-roads layer maps the same alignment (or the Atlas classes it Resource/Recreation). The 15 m G2 setback governs these; see G2. Confirm classification with the Quarries Section.`);
+      if (declOverridden.length) notes.push(`OPERATOR DECLARATION recorded this run: the nearest road serving this site is a forest access road. ${declOverridden.length} unnamed, uncorroborated road hit(s) within 50 m reclassified on that declaration alone (named or paved-class roads are never affected by it). The declaration prints with this report; repeat it in the application and expect the Quarries Section to verify.`);
     } else {
       v = verdictFor(nAll, 50, failed(['lu_roads_p','lu_roads_s']));
     }
@@ -585,7 +590,11 @@ function runSectionG(boundary, results) {
     checks.push({ id:'TEN', label:'Existing quarry tenure overlap', setback:0,
       verdict: v, nearest: named[0] || nearest(boundary, results, ids), sources: sourceStatus(results, ids),
       notes: [
-        named.length ? `WARNING: the proposed boundary OVERLAPS a mapped existing (or recently mapped) quarry location: ${named.slice(0,4).map(h=>`${h.name} (${h.source})`).join('; ')}${named.length>4?'; …':''}. An application over another holder's active tenure will conflict. If this is the applicant's own tenure (renewal or expansion), state that in the application.` : null,
+        named.length ? `WARNING: the proposed boundary OVERLAPS a mapped existing (or recently mapped) quarry location: ${named.slice(0,4).map(h=>{
+          const d = (h.feature.properties||{}).description || '';
+          const pm = d.match(/Permit number (\d+)/); const st = d.match(/Activity status (\w+)/);
+          return `${h.name}${pm?` (permit ${pm[1]}${st?`, ${st[1].toLowerCase()}`:''})`:''} [${h.source}]`;
+        }).join('; ')}${named.length>4?'; …':''}. An application over another holder's active tenure will conflict. If this is the applicant's own tenure (renewal or expansion), state that in the application.` : null,
         'Live tenure positions are datum-corrected; the boundary-polygon snapshot is dated. Confirm current status with the Quarries Section before relying on either.',
       ].filter(Boolean) });
   }
@@ -769,7 +778,8 @@ function overallVerdict(gChecks) {
 }
 
 /* Orchestrator */
-async function runScreen(boundary, fetchFn, onProgress) {
+async function runScreen(boundary, fetchFn, onProgress, opts) {
+  opts = opts || {};
   const results = {};
   const tasks = [
     queryArcgis(NLGN_SOURCE, boundary, fetchFn).then(r => { results[r.id] = r; onProgress && onProgress(r); return r; }),
@@ -777,7 +787,7 @@ async function runScreen(boundary, fetchFn, onProgress) {
     ...BUNDLED.map(s => loadBundled(s, boundary, fetchFn).then(r => { results[r.id] = r; onProgress && onProgress(r); return r; })),
   ];
   await Promise.allSettled(tasks);
-  const g = runSectionG(boundary, results);
+  const g = runSectionG(boundary, results, opts);
   const e = runSectionE(boundary, results);
   const referrals = runReferralForecast(boundary, results);
   const monuments = collectWithin(boundary, results, ['nlgn'], 5000).slice(0, 3)
@@ -789,7 +799,7 @@ async function runScreen(boundary, fetchFn, onProgress) {
     .filter(r => r && r.ok && r.src && r.src.snapshot)
     .map(r => ({ id: r.id, note: r.src.note, snapshot: r.src.snapshot, ageDays: r.snapshotAgeDays, stale: r.stale }))
     .sort((a, b) => b.ageDays - a.ageDays);
-  return { verdict: overallVerdict(g), g, e, referrals, monuments, results, datumSentinel: datumSentinelStatus(), snapshotWarnings, ranAt: new Date().toISOString() };
+  return { verdict: overallVerdict(g), g, e, referrals, monuments, results, datumSentinel: datumSentinelStatus(), snapshotWarnings, declarations: opts.declarations || null, ranAt: new Date().toISOString() };
 }
 
 /* Datum audit: what each source's coordinates actually are, and how we know.

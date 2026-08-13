@@ -185,6 +185,25 @@ image (map initialized with preserveDrawingBuffer), and prints that image
 centered with a caption; the live map is hidden in print. Browser-menu
 printing captures the current view as a fallback.
 
+## Operator declaration (forest access road)
+
+A per-run checkbox records the operator's declaration that the nearest road
+serving the site is a forest access road. Under it, unnamed road hits inside
+50 m are assessed at G2's 15 m instead of G3's 50 m even without FFA
+corroboration; named or paved-class roads are never affected. The declaration
+is printed in the report and in the G3 notes, on the basis that permits have
+been issued adjacent to forest access roads under the G2 framing — the
+declaration puts the operator's judgment on the record rather than in the
+tool's inference.
+
+## Draw and adjust
+
+A boundary can be drawn directly on the map (click vertices, minimum three,
+Finish closes and screens) and any screened boundary can be dragged to a new
+position and re-screened; the report is titled with the displacement so
+adjusted runs are distinguishable from the original. Rings and measurements
+are explicitly flagged stale between moving and re-screening.
+
 ## Outage behavior
 
 A failed source can never produce a clean answer. Section G verdicts degrade

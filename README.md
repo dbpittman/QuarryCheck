@@ -6,7 +6,7 @@ province's own published map services, live in the browser. No backend, no accou
 nothing stored.
 
 ## What it does
-- Upload the same KMZ/KML/zipped-shapefile boundary the application requires.
+- Upload the same KMZ/KML/zipped-shapefile boundary the application requires — or draw one on the map, and drag any screened boundary to a new position and re-screen it.
 - Section G: 15 m property / 15 m trail / 50 m road / 90 m protected road /
   50 m water / 30 m wetland. PASS / ENCROACHES / ADVISORY, nearest feature named,
   distance measured, source and timestamp on every claim.
