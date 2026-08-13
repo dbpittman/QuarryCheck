@@ -447,7 +447,7 @@ async function screenBoundary(boundary, access, meta){
     $('#map').classList.add('busy');
     const stamp = $('#stamp');
     stamp.className = 'stamp RUNNING'; stamp.style.display='block';
-    const total = SOURCES.length + BUNDLED.length;
+    const total = SOURCES.length + BUNDLED.length + 1; /* +1: NLGN monuments query runs alongside the registry */
     stamp.querySelector('.lvl').textContent = 'SCREENING';
     stamp.querySelector('.dtl').textContent = `Boundary loaded: ${areaHa} ha, ${polyCount} polygon(s), ${access.length} access line(s). Querying ${total} provincial sources — takes 15\u201330 seconds.`;
     prog.style.display='block';
@@ -455,12 +455,15 @@ async function screenBoundary(boundary, access, meta){
     let done=0, failed=[];
     const t0 = Date.now();
     window._bnd = boundary;
+    const pending = new Set([ 'nlgn', ...SOURCES.map(s=>s.id), ...BUNDLED.map(s=>s.id) ]);
     const out = await runScreen(boundary, (u,o)=>fetch(u,o), r => {
-      done++;
+      done++; pending.delete(r.id);
       if (!r.ok && !r.missing) failed.push(r.id);
       stamp.querySelector('.dtl').textContent = `${done} of ${total} provincial sources answered`
-        + (failed.length? ` (${failed.length} unreachable)` : '') + '.';
+        + (failed.length? ` (${failed.length} unreachable)` : '')
+        + (done >= total - 3 && pending.size? `. Waiting on: ${[...pending].join(', ')} — provincial server slow; retrying (up to ~30 s).` : '.');
     });
+    stamp.querySelector('.dtl').textContent = `All sources settled — computing setbacks, referrals, and map…`;
     $('#map').classList.remove('busy');
     drawHits(out);
     if (map.isStyleLoaded()) drawWaterTie(out); else map.once('idle', ()=>drawWaterTie(out));
