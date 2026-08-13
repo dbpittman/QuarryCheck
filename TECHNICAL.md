@@ -261,6 +261,11 @@ the dnrmaps Map_Layers service:
 | agri_rfp | AGOL AgricultureBoundaries/8 | 71 agriculture development/RFP polygons |
 | tx_nalcor | dnrmaps Map_Layers/15 | Nalcor transmission lines |
 | tx_canvec | dnrmaps Map_Layers/16 | CanVec transmission lines |
+| fp_aop_harv / fp_fyop_harv | AGOL FFA_ForestPlanning/0 and /6 | annual and five-year plan commercial harvest blocks (7,839 FYOP blocks) |
+| fp_aop_silv / fp_fyop_silv | AGOL FFA_ForestPlanning/5 and /10 | silviculture treatment areas |
+| fp_oa | AGOL FFA_ForestPlanning/11 | designated forestry operating areas (3,828) |
+| domestic_nf / domestic_lb | AGOL FFA_DomesticHarvestBlocks | domestic (firewood) cutting blocks |
+| fmd | AGOL FFA_ForestManagementDistricts_NL/6 | context only: names the reviewing forest management district in the forestry standing entry (MD_NAME can be null; the number always renders) |
 
 Datum note: tx_nalcor/tx_canvec sit on the same Map_Layers service as the
 roads layer (13/14) verified correct as served; they are treated as
@@ -289,7 +294,13 @@ ECCC migratory birds, highway access, tourism, and — Labrador only —
 Indigenous consultation naming Nunatsiavut, Innu Nation, and NunatuKavut) are
 sourced from the departmental advice record on a comparable quarry EA
 (EA 2396, Peak Pond Quarry Extension) and are advisory wording only: they
-carry no verdicts and no map queries.
+carry no verdicts and no map queries. The forestry entry goes further at the
+owner's direction: it states that cleared merchantable timber is Crown timber
+carrying royalty/stumpage with salvage expected, warns that third-party
+licensed timber limits (including pulp-and-paper interests) are not all
+publicly mapped, and names the forest management district the boundary sits
+in (from the fmd layer). Planned-harvest, silviculture, operating-area, and
+domestic-block overlaps are mapped referral lines, not standing wording.
 
 Department rename: IET became Energy and Mines in late October 2025; authority
 strings updated accordingly ("Energy and Mines (formerly IET)").

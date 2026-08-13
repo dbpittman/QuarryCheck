@@ -281,6 +281,26 @@ async function main() {
     const ind = rL.standing.find(s => /Indigenous consultation/.test(s.agency));
     ok(ind && ind.flagged && /Innu Nation/.test(ind.why) && /NunatuKavut/.test(ind.why),
        'Labrador boundary flags Indigenous consultation naming all three parties');
+    // forestry: sources registered, planning conflict produces a referral, district naming works
+    for (const id of ['fp_aop_harv','fp_fyop_harv','fp_aop_silv','fp_fyop_silv','fp_oa','domestic_nf','domestic_lb','fmd'])
+      ok(app.SOURCES.some(s => s.id === id), `source registered: ${id}`);
+    const oaRes = { id:'fp_oa', ok:true, queried:new Date().toISOString(),
+      src:{ id:'fp_oa', note:'Designated forestry operating areas', authority:'test', nameFields:['OA_ID'] },
+      features:[{ type:'Feature', properties:{ OA_ID:'OA-99' }, geometry:{ type:'Polygon',
+        coordinates:[[[-58.7535,47.6075],[-58.7505,47.6075],[-58.7505,47.6105],[-58.7535,47.6105],[-58.7535,47.6075]]] } }] };
+    const rF = app.runReferralForecast(boundary, { fp_oa: oaRes });
+    const fRef = rF.items.find(i => /planned harvest \/ silviculture/.test(i.agency));
+    ok(fRef && fRef.total >= 1, 'forestry operating-area overlap produces the planning-conflict referral');
+    const fmdRes = { id:'fmd', ok:true, queried:new Date().toISOString(),
+      src:{ id:'fmd', note:'Forest management district', authority:'test', nameFields:['MD_NAME','MD_NUM'] },
+      features:[{ type:'Feature', properties:{ MD_NAME:null, MD_NUM:14 }, geometry:{ type:'Polygon',
+        coordinates:[[[-58.8,47.55],[-58.7,47.55],[-58.7,47.65],[-58.8,47.65],[-58.8,47.55]]] } }] };
+    const rD = app.runReferralForecast(boundary, { fmd: fmdRes });
+    const fStand = rD.standing.find(s => /Forestry/.test(s.agency));
+    ok(/Management District 14/.test(fStand.agency) && !/null/.test(fStand.agency),
+       'forestry standing entry names the district by number and tolerates a null name');
+    ok(/stumpage/.test(fStand.why) && /timber limits/.test(fStand.why) && /salvage/.test(fStand.why),
+       'forestry wording covers stumpage, third-party timber limits, and salvage');
   }
 
   console.log(`\n${pass} passed, ${fail} failed`);

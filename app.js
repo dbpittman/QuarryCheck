@@ -61,6 +61,14 @@ const SOURCES = [
   { id:'agri_rfp',       url:`${AGOL}/AgricultureBoundaries/FeatureServer/8/query`, queryDist:200, nameFields:['AOI_NAME','PolygonID','OBJECTID'], authority:'GNL ArcGIS Online (agriculture)', note:'Agriculture development / RFP areas' },
   { id:'tx_nalcor',      url:`${DNR}/Map_Layers/MapServer/15/query`, queryDist:200, nameFields:['TL_ID','OBJECTID'], authority:'dnrmaps (Geoscience Atlas)', note:'NL Hydro (Nalcor) transmission lines' },
   { id:'tx_canvec',      url:`${DNR}/Map_Layers/MapServer/16/query`, queryDist:200, nameFields:['PROVIDER','TYPE','OBJECTID'], authority:'dnrmaps (Geoscience Atlas)', note:'CanVec transmission lines (federal compilation)' },
+  { id:'fp_aop_harv',    url:`${AGOL}/FFA_ForestPlanning/FeatureServer/0/query`, queryDist:200, nameFields:['AOP_ID','OBJECTID'], authority:'GNL ArcGIS Online (forestry planning)', note:'Annual operating plan: commercial harvest blocks' },
+  { id:'fp_fyop_harv',   url:`${AGOL}/FFA_ForestPlanning/FeatureServer/6/query`, queryDist:200, nameFields:['AOP_ID','OBJECTID'], authority:'GNL ArcGIS Online (forestry planning)', note:'Five-year operating plan: commercial harvest blocks' },
+  { id:'fp_aop_silv',    url:`${AGOL}/FFA_ForestPlanning/FeatureServer/5/query`, queryDist:200, nameFields:['TREAT_TYPE','AOP_ID','OBJECTID'], authority:'GNL ArcGIS Online (forestry planning)', note:'Annual operating plan: silviculture treatment areas' },
+  { id:'fp_fyop_silv',   url:`${AGOL}/FFA_ForestPlanning/FeatureServer/10/query`, queryDist:200, nameFields:['TREAT_TYPE','AOP_ID','OBJECTID'], authority:'GNL ArcGIS Online (forestry planning)', note:'Five-year operating plan: silviculture treatment areas' },
+  { id:'fp_oa',          url:`${AGOL}/FFA_ForestPlanning/FeatureServer/11/query`, queryDist:200, nameFields:['OA_ID','SUBAREA','YEAR','OBJECTID'], authority:'GNL ArcGIS Online (forestry planning)', note:'Designated forestry operating areas' },
+  { id:'domestic_nf',    url:`${AGOL}/FFA_DomesticHarvestBlocks_NF/FeatureServer/0/query`, queryDist:200, nameFields:['DISTRICT','ZONE','SPECIES','OBJECTID'], authority:'GNL ArcGIS Online (forestry)', note:'Domestic harvest blocks (island)' },
+  { id:'domestic_lb',    url:`${AGOL}/FFA_DomesticHarvestBlocks_LB/FeatureServer/0/query`, queryDist:200, nameFields:['DISTRICT','ZONE','SPECIES','OBJECTID'], authority:'GNL ArcGIS Online (forestry)', note:'Domestic harvest blocks (Labrador)' },
+  { id:'fmd',            url:`${AGOL}/FFA_ForestManagementDistricts_NL/FeatureServer/6/query`, queryDist:0, nameFields:['MD_NAME','MD_NUM'], authority:'GNL ArcGIS Online (forestry)', note:'Forest management district (context: names the reviewing district office)' },
 
   // Mineral tenure / claims (referral)
   { id:'claims', datum:'nad27null', /*+shift margin*/         url:`${DNR}/Mineral_Lands/MapServer/0/query`, queryDist:200, nameFields:['LICENCE','CLIENT','OBJECTID'], authority:'dnrmaps (live tenure database)', note:'Map staked claims' },
@@ -758,6 +766,10 @@ function runReferralForecast(boundary, results) {
     'Mapped agriculture development or RFP area on or near the boundary; agricultural land interests are referred for review');
   add('Utility corridors (transmission lines)', ['tx_nalcor','tx_canvec'], 200,
     'Mapped electrical transmission line within 200 m; utility easements and clearance requirements apply near corridors');
+  add('Forestry (planned harvest / silviculture conflict)', ['fp_aop_harv','fp_fyop_harv','fp_aop_silv','fp_fyop_silv','fp_oa'], 200,
+    'Overlap or proximity to blocks in the annual or five-year forestry operating plans — commercial harvest allocations, silviculture treatment areas, or designated operating areas. Timber in these blocks is committed or invested; the district forestry office will weigh the conflict');
+  add('Forestry (domestic harvest blocks)', ['domestic_nf','domestic_lb'], 200,
+    'Designated domestic (firewood) cutting block on or near the boundary; community cutting allocations are a forestry referral interest');
 
   // Geodetic monuments: a 5 m buffer is required around control survey markers (Lands Act s.65);
   // the GIS and Mapping Division must be contacted if a marker could be disturbed.
@@ -826,8 +838,14 @@ function runReferralForecast(boundary, results) {
 
   standing.push({ agency:'Water Resources Management Division (water use)',
     why:'A water use licence under the Water Resources Act is required before using water from any source for any purpose (e.g. dust suppression, washing). Effluent or runoff leaving the site must conform to the Environmental Control Water and Sewage Regulations.' });
-  standing.push({ agency:'Forestry (cutting and fire season)',
-    why:'A Cutting Permit under the Cutting of Timber Regulations is required before any timber harvesting or removal. During forest fire season, an Operating Permit (and a Permit to Burn for burning on or within 300 m of forest land) is required under the Forest Fire Regulations.' });
+  {
+    const dist = collectWithin(boundary, results, ['fmd'], 0);
+    const dName = dist.length ? (dist[0].feature.properties.MD_NAME || '') : '';
+    const dNum = dist.length ? String(dist[0].feature.properties.MD_NUM || '') : '';
+    const dLabel = dNum ? `Management District ${dNum}${dName ? ` (${dName})` : ''}` : '';
+    standing.push({ agency:'Forestry (timber, cutting and fire season)' + (dLabel ? ` — ${dLabel}` : ''),
+      why:'A Cutting Permit under the Cutting of Timber Regulations is required before any timber harvesting or removal. Merchantable timber cleared from the site is Crown timber: royalty/stumpage applies and salvage of usable wood is the expected practice, not optional. Third-party timber tenure — including licensed timber limits held by pulp-and-paper interests and other commercial operators — is not all publicly mapped; confirm standing timber commitments with the district forestry office' + (dLabel ? ` (${dLabel})` : '') + '. During forest fire season, an Operating Permit (and a Permit to Burn for burning on or within 300 m of forest land) is required under the Forest Fire Regulations.' });
+  }
   standing.push({ agency:'Environment (pollution prevention)',
     why:'Operations are subject to the Air Pollution Control Regulations (dust; burning of waste is prohibited per Schedule D). All waste generated on site must go to an approved disposal facility.' });
   standing.push({ agency:'Government Service Centre (fuel storage and spills)',
