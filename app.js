@@ -237,11 +237,29 @@ const DATUM_SENTINEL = {
 let _sentinelState = { state: 'unchecked' };
 let _sentinelPromise = null;
 function datumSentinelStatus() { return _sentinelState; }
+/* Timed fetch: aborts a request that has not answered within ms.
+   Generous on purpose — dnrmaps has been observed answering successfully at
+   ~9 s under load; the point is to cut off 15 s+ hangs-to-503, not slow wins. */
+const QUERY_TIMEOUT_1 = 10000; /* first attempt */
+const QUERY_TIMEOUT_2 = 20000; /* retry: patient, so a slow server can still succeed */
+async function timedFetch(fetchFn, url, opts, ms) {
+  const ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+  const timer = ctl ? setTimeout(() => ctl.abort(), ms) : null;
+  try {
+    return await fetchFn(url, Object.assign({}, opts, ctl ? { signal: ctl.signal } : {}));
+  } catch (e) {
+    if (ctl && ctl.signal.aborted) throw new Error(`no response within ${ms / 1000} s`);
+    throw e;
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 function checkDatumSentinel(fetchFn) {
   if (_sentinelPromise) return _sentinelPromise;
   _sentinelPromise = (async () => {
     try {
-      const r = await fetchFn(DATUM_SENTINEL.url);
+      const r = await timedFetch(fetchFn, DATUM_SENTINEL.url, {}, QUERY_TIMEOUT_2);
       const d = await r.json();
       const f = d.features && d.features[0];
       let c = null;
@@ -286,12 +304,12 @@ async function queryArcgis(src, boundary, fetchFn) {
     outFields: '*', geometryPrecision: '5', resultRecordCount: '250', f: 'geojson',
   });
   const started = new Date();
-  const attempt = async () => {
-    const resp = await fetchFn(src.url, {
+  const attempt = async (timeoutMs) => {
+    const resp = await timedFetch(fetchFn, src.url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: body.toString(),
-    });
+    }, timeoutMs);
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const data = await resp.json();
     if (data.error) throw new Error(data.error.message || 'server error');
@@ -299,8 +317,12 @@ async function queryArcgis(src, boundary, fetchFn) {
   };
   try {
     let data;
-    try { data = await attempt(); }
-    catch (e1) { await new Promise(r => setTimeout(r, 1200)); data = await attempt(); }
+    try { data = await attempt(QUERY_TIMEOUT_1); }
+    catch (e1) {
+      /* jittered pause so parallel retries do not re-slam the host in unison */
+      await new Promise(r => setTimeout(r, 1200 + Math.random() * 800));
+      data = await attempt(QUERY_TIMEOUT_2);
+    }
     // Some ArcGIS Servers ignore f=geojson and return esriJSON; detect and convert points minimally.
     let features = data.features || [];
     if (features.length && !features[0].geometry && features[0].attributes) {
@@ -817,4 +839,5 @@ if (typeof module !== 'undefined') module.exports = { DATUM_AUDIT,
   SOURCES, BUNDLED, runScreen, runSectionG, runSectionE, runReferralForecast,
   minDistanceMeters, directionFrom, queryArcgis, loadBundled, overallVerdict, inLabrador, fmt,
   checkDatumSentinel, datumSentinelStatus, DATUM_SENTINEL,
+  timedFetch, QUERY_TIMEOUT_1, QUERY_TIMEOUT_2,
 };

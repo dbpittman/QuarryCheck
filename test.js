@@ -211,6 +211,37 @@ async function main() {
     ok(g3named.verdict === 'ENCROACHES', 'named road always fails firm');
   }
 
+  console.log('\n[12] query timeouts feed the outage rule, never break it');
+  {
+    // a request that never answers but honours abort
+    const hang = (url, opts) => new Promise((resolve, reject) => {
+      if (opts && opts.signal) opts.signal.addEventListener('abort', () => reject(new Error('aborted')));
+    });
+    let timedOut = false;
+    try { await app.timedFetch(hang, 'https://example.invalid/', {}, 100); }
+    catch (e) { timedOut = /no response within/.test(String(e.message)); }
+    ok(timedOut, 'timedFetch aborts a hung request with a clear message');
+    // a response that arrives in time passes through untouched
+    const quick = () => new Promise(r => setTimeout(() => r({ ok: true, json: async () => ({ features: [] }) }), 50));
+    const resp = await app.timedFetch(quick, 'https://example.invalid/', {}, 2000);
+    ok(resp && resp.ok === true, 'timedFetch passes through an in-time response');
+    // both attempts failing yields ok:false (outage rule input), not a throw
+    const src = { id: 'tmo_test', url: 'https://example.invalid/q', queryDist: 100, nameFields: ['OBJECTID'], authority: 'test', note: 'timeout test' };
+    const dead = () => Promise.reject(new Error('no response within 10 s'));
+    const r1 = await app.queryArcgis(src, boundary, dead);
+    ok(r1.ok === false && /no response within/.test(r1.error), `timed-out source reports ok:false for the outage rule (${r1.error})`);
+    // first attempt fails, slow-but-successful retry still wins
+    let calls = 0;
+    const flaky = () => {
+      calls++;
+      if (calls === 1) return Promise.reject(new Error('HTTP 503'));
+      return new Promise(r => setTimeout(() => r({ ok: true, json: async () => ({ features: [] }) }), 300));
+    };
+    const r2 = await app.queryArcgis(src, boundary, flaky);
+    ok(r2.ok === true && calls === 2, `failed first attempt retries and a slow success still succeeds (${calls} calls)`);
+    ok(app.QUERY_TIMEOUT_2 > app.QUERY_TIMEOUT_1, 'retry is more patient than the first attempt');
+  }
+
   console.log(`\n${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
 }
