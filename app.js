@@ -753,12 +753,12 @@ function overallVerdict(gChecks) {
   if (enc.length) {
     const gIds = enc.filter(c => /^G/.test(c.id)).map(c => c.id);
     const parts = [];
-    if (gIds.length) parts.push(`Section G encroachment: ${gIds.join(', ')} — the form states encroaching boundaries "will not be accepted"`);
-    if (enc.some(c => c.id === 'TEN')) parts.push('the boundary overlaps a mapped existing (or recently mapped) quarry location — competing-tenure conflict unless it is the applicant\'s own');
-    if (enc.some(c => c.id === 'NPA')) parts.push('the boundary intersects a No Permits Available area (s.5)');
+    if (gIds.length) parts.push(`Section G encroachment: ${gIds.join(', ')} — the form states encroaching boundaries "will not be accepted".`);
+    if (enc.some(c => c.id === 'TEN')) parts.push('The boundary overlaps a mapped existing (or recently mapped) quarry location — a competing-tenure conflict unless it is the applicant\'s own.');
+    if (enc.some(c => c.id === 'NPA')) parts.push('The boundary intersects a No Permits Available area (s.5).');
     return { level:'FAIL',
       text:'This boundary would not be accepted as submitted.',
-      detail: parts.join('. ') + '.' };
+      detail: parts.join(' ') };
   }
   const adv = gChecks.filter(c => c.verdict === 'ADVISORY');
   return { level: adv.length ? 'PASS_WITH_ADVISORIES' : 'PASS',

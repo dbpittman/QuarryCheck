@@ -101,19 +101,25 @@ footer{margin-top:48px;border-top:2px solid var(--ink);padding-top:10px;font-siz
 @media print{
   #map{display:none!important}
   #mapprint{display:block;text-align:center;break-inside:avoid;page-break-inside:avoid}
-  #mapprint img{display:block;margin:0 auto;max-width:100%;max-height:520px;border:1px solid #bbb}
-  #mapprint .cap{font-size:.75rem;color:#555;margin-top:4px}
+  #mapprint img{display:block;margin:0 auto;max-width:100%;max-height:480px;border:1px solid #bbb}
+  #mapprint .cap{font-size:.72rem;color:#555;margin-top:4px}
+  /* Rows must be allowed to flow across pages: a forced-unbreakable row taller
+     than a page steals a full page per check. Only small blocks stay atomic. */
+  tr,td,th{break-inside:auto!important;page-break-inside:auto!important}
+  .warnbox{break-inside:avoid;page-break-inside:avoid}
   details.srcd summary{display:none}
-  details.srcd .src{display:block}
+  details.srcd .src{display:block;font-size:8.5px;line-height:1.3;color:#444}
+  table.attrs{font-size:8.5px;line-height:1.25}
+  table.attrs td{padding:0 6px 0 0}
+  table.stack th,table.stack td{font-size:10px;padding:4px 6px;vertical-align:top}
   .copybtn,#maplegend{display:none!important}
   #map button,#mapbar{display:none!important}
   h2{break-after:avoid;page-break-after:avoid}
-  .ref,.warnbox,tr{break-inside:avoid;page-break-inside:avoid}
   section.rpt{break-before:auto}
   #drop,#printbtn,#progress{display:none!important}
   .sheet{border:0;max-width:none;padding:0}
   .sheet::before,.sheet::after{display:none}
-  body{font-size:12px}
+  body{font-size:11px}
   a{color:var(--ink);text-decoration:none}
 }
 </style>
