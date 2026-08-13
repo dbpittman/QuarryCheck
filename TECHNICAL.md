@@ -60,6 +60,15 @@ varying directions — consistent with 1:50k cartographic generalization and pon
 water-level differences rather than a datum error, which is the accuracy floor
 of that source.
 
+**Datum sentinel.** The correction carries one standing risk: if the province
+ever fixes the server pipeline, applying the NTv2 shift would add a ~65 m
+error instead of removing one. Every run therefore checks a sentinel first:
+permit 151600's served point is fetched and compared against its pinned
+untransformed-NAD27 position. Within 5 m → corrections proceed (state shown in
+the report's datum audit). Moved → corrections are withheld for the run and
+the report flags all affected sources as unverified ±75 m. Sentinel
+unreachable → corrections proceed on the standing verification, flagged.
+
 **Correction implementation.** Sources flagged `datum:'nad27null'` in app.js
 are corrected client-side using `data/nad27_shift.json`, a 0.5-degree lattice
 sampled from the NRCan NTv2 grid (<1 m interpolation error). Validated
@@ -128,6 +137,16 @@ operating permit exists adjacent to such mapped lines. Rules:
 - Stated limit: small waterbodies may be unmapped in both sources; "mapped" is
   the only claim made.
 
+## Building-control corridors (G4 note semantics)
+
+The Municipal Affairs building-control features are corridor *polygons*
+(verified: every outer ring closed; maximum interior half-width ~400 m across
+all 159 features — consistent corridor geometry, no malformed placemarks), not
+lines. A site overlapping a corridor therefore correctly measures 0 m; the
+report states this as "boundary lies within the mapped building control area"
+rather than a misleading "line 0 m away". Corridor extents are as mapped by
+Municipal Affairs and are not survey-anchored.
+
 ## Bundled snapshots (/data)
 
 | File | Source | Notes |
@@ -179,5 +198,9 @@ snapshot dates in app.js.
 - Batteau Barrens candidate site: three marginal failures identified
   pre-application (road 13–14 m, pond 46 m, bog 19 m), with the road correctly
   identified as the Bateau Barrens forest access road by the FFA layer.
-- Engine is Node-testable: `global.turf = require('@turf/turf');
-  require('./app.js')`.
+- Committed regression suite: `node test.js` (offline: lattice, distance
+  engine, correction direction, bundled loaders, corridor validity, G4
+  wording, sentinel degradation) and `TEST_LIVE=1 node test.js` (adds the
+  live sentinel check). 15 assertions anchored on file 71113200 / permit
+  151600. Note: permit numbers renumber on renewal (this file has carried
+  150616 and 151600); the file number is the stable key.

@@ -26,7 +26,8 @@ Datum handling, source verification, and screening-rule rationale: see TECHNICAL
 
 ## Files
 - index.html — UI
-- app.js — source config + screening engine (Node-testable; see TECHNICAL.md)
+- app.js — source config + screening engine
+- test.js — regression suite (`node test.js`; `TEST_LIVE=1` adds the live datum-sentinel check)
 - data/*.geojson — bundled snapshots
 
 ## Deploy

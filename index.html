@@ -678,6 +678,11 @@ function render(out, meta){
   }
 
   h += '</section><section class="rpt"><h2>Datum audit</h2><p class="note">Reference frame: NAD83(CSRS), the provincial survey datum realized by the NL Geodetic Network. What each source\'s coordinates actually are, how that was verified, and what was done about it:</p>';
+  { const s = out.datumSentinel || { state: 'unchecked' };
+    if (s.state === 'confirmed') h += `<p class="note" style="color:#2a7">Datum sentinel: CONFIRMED this run — the tenure server still serves permit 151600 at its pinned untransformed-NAD27 position (offset ${s.offsetMeters.toFixed(1)} m from reference). The NTv2 correction remains valid and was applied.</p>`;
+    else if (s.state === 'tripped') h += `<p class="note" style="color:#c33;font-weight:600">DATUM SENTINEL TRIPPED: ${s.detail} All results from dnrmaps tenure and 1:50k topo sources this run are uncorrected and their positions are unverified — treat distances from those sources as ±75 m until re-verified.</p>`;
+    else if (s.state === 'unavailable') h += `<p class="note">Datum sentinel: could not be checked this run (${s.error}). NTv2 corrections were applied on the standing verification (TECHNICAL.md); if the province has changed the service datum since, corrected positions would be wrong by ~65 m.</p>`;
+  }
   h += '<table class="stack"><thead><tr><th>Source</th><th>Claimed</th><th>Verified by</th><th>Action</th><th>Residual accuracy</th></tr></thead><tbody>';
   for (const r of DATUM_AUDIT) {
     h += `<tr><td data-l="source">${esc(r.group)}</td><td class="mono" data-l="claimed">${esc(r.claimed)}</td><td data-l="verified by">${esc(r.verified)}</td><td data-l="action">${esc(r.action)}</td><td class="mono" data-l="residual">${esc(r.residual)}</td></tr>`;

@@ -99,7 +99,7 @@ const BUNDLED = [
   { id:'protected_roads', path:'data/protected_roads.geojson', queryDist:200,
     authority:'Municipal Affairs KMZ, snapshot 2026-08-11', note:'Protected Road zoning polygons (429 roads, 853 polygons)' },
   { id:'building_control', path:'data/building_control.geojson', queryDist:200,
-    authority:'Municipal Affairs KMZ, snapshot 2026-08-11', note:'Building control lines along protected roads' },
+    authority:'Municipal Affairs KMZ, snapshot 2026-08-11', note:'Building control areas (corridor polygons) along protected roads' },
   { id:'no_permit_areas', path:'data/no_permit_areas.geojson', queryDist:200,
     authority:'IET quarries site KMZ, snapshot 2026-08-13', note:'No Permits Available areas, s.5 Quarry Materials Regulations (5 designated areas). Listing is province-described work-in-progress; absence of a polygon is not proof none exists.' },
   { id:'qmels', path:'data/qmels.geojson', queryDist:500,
@@ -221,6 +221,48 @@ function correctNad27Geometry(geom) {
   return { type: geom.type, coordinates: walk(geom.coordinates) };
 }
 
+/* ---------------- datum sentinel ----------------
+   Guards the NAD27 correction against the province silently fixing the server.
+   Reference: permit 151600, whose served point is proven equal to the raw
+   no-shift inverse of its recorded NAD27 UTM (TECHNICAL.md, both proofs).
+   If the served point ever moves off this pinned value, the service datum has
+   changed and applying the NTv2 shift would ADD ~65 m of error instead of
+   removing it. Tripped => corrections withheld for this run, flagged in the
+   report. Unreachable => corrections proceed (status quo), flagged as such. */
+const DATUM_SENTINEL = {
+  url: 'https://dnrmaps.gov.nl.ca/arcgis/rest/services/GeoAtlas/Mineral_Lands/MapServer/8/query?where=PERMIT_ID%3D151600&outFields=PERMIT_ID&outSR=4326&f=geojson',
+  expected: [-58.75217940509539, 47.608816978369184], /* as served 2026-08-13 == raw NAD27, no transform */
+  tolMeters: 5,
+};
+let _sentinelState = { state: 'unchecked' };
+let _sentinelPromise = null;
+function datumSentinelStatus() { return _sentinelState; }
+function checkDatumSentinel(fetchFn) {
+  if (_sentinelPromise) return _sentinelPromise;
+  _sentinelPromise = (async () => {
+    try {
+      const r = await fetchFn(DATUM_SENTINEL.url);
+      const d = await r.json();
+      const f = d.features && d.features[0];
+      let c = null;
+      if (f && f.geometry) c = f.geometry.coordinates || (f.geometry.x !== undefined ? [f.geometry.x, f.geometry.y] : null);
+      if (!c) throw new Error('sentinel permit 151600 not found in service response');
+      const [ex, ey] = DATUM_SENTINEL.expected;
+      const dx = (c[0] - ex) * Math.cos(ey * Math.PI / 180) * 111320;
+      const dy = (c[1] - ey) * 110540;
+      const off = Math.hypot(dx, dy);
+      _sentinelState = off <= DATUM_SENTINEL.tolMeters
+        ? { state: 'confirmed', offsetMeters: off, checked: new Date().toISOString() }
+        : { state: 'tripped', offsetMeters: off, checked: new Date().toISOString(),
+            detail: `Served sentinel point moved ${off.toFixed(1)} m off its pinned NAD27 value; the service datum appears to have changed. NAD27 corrections WITHHELD this run pending re-verification.` };
+    } catch (e) {
+      _sentinelState = { state: 'unavailable', error: String(e.message || e), checked: new Date().toISOString() };
+    }
+    return _sentinelState;
+  })();
+  return _sentinelPromise;
+}
+
 /* ---------------- ArcGIS query ---------------- */
 
 function esriRingsFromBoundary(boundary) {
@@ -265,10 +307,17 @@ async function queryArcgis(src, boundary, fetchFn) {
       features = features.map(f => esriToGeojson(f));
     }
     if (src.datum === 'nad27null') {
-      await loadShiftLattice(fetchFn);
-      features = features.map(f => f.geometry
-        ? { ...f, properties: { ...(f.properties||{}), _datumCorrected: 'NAD27->NAD83 NTv2 shift applied (server serves untransformed NAD27)' }, geometry: correctNad27Geometry(f.geometry) }
-        : f);
+      const sentinel = await checkDatumSentinel(fetchFn);
+      if (sentinel.state === 'tripped') {
+        features = features.map(f => f.geometry
+          ? { ...f, properties: { ...(f.properties||{}), _datumCorrectionWithheld: sentinel.detail } }
+          : f);
+      } else {
+        await loadShiftLattice(fetchFn);
+        features = features.map(f => f.geometry
+          ? { ...f, properties: { ...(f.properties||{}), _datumCorrected: 'NAD27->NAD83 NTv2 shift applied (server serves untransformed NAD27; sentinel-verified this run)' }, geometry: correctNad27Geometry(f.geometry) }
+          : f);
+      }
     }
     return { id: src.id, ok: true, features, queried: started.toISOString(), src };
   } catch (e) {
@@ -472,7 +521,8 @@ function runSectionG(boundary, results) {
       verdict: verdictFor(n, 90, failed(ids)), nearest:n,
       sources: sourceStatus(results, ['lu_prz','protected_roads','building_control']),
       notes: [
-        bcl && bcl.dist < 90 ? `Building control line ${fmt(bcl.dist)} away (${bcl.name}); a separate Municipal Affairs regime applies along protected roads.` : null,
+        bcl && bcl.dist === 0 ? `The boundary lies WITHIN the mapped building control area for ${bcl.name}. This is a corridor polygon (typically a few hundred metres each side of the road), not a line: overlap means the site falls inside the mapped area, not that a control line touches the boundary. A separate Municipal Affairs approvals regime applies; corridor extents are as mapped by Municipal Affairs and are not survey-anchored.` :
+        bcl && bcl.dist < 90 ? `Building control area boundary ${fmt(bcl.dist)} away (${bcl.name}); a separate Municipal Affairs regime applies along protected roads.` : null,
         'Screened against the Protected Road Zoning KMZ snapshot; per-road plans on the Municipal Affairs list govern.',
       ].filter(Boolean) });
   }
@@ -697,7 +747,7 @@ async function runScreen(boundary, fetchFn, onProgress) {
                  elev: h.feature.properties.elev, adj_date: h.feature.properties.adj_date,
                  east: h.feature.properties.east, north: h.feature.properties.north,
                  zone: h.feature.properties.zone, queried: h.queried }));
-  return { verdict: overallVerdict(g), g, e, referrals, monuments, results, ranAt: new Date().toISOString() };
+  return { verdict: overallVerdict(g), g, e, referrals, monuments, results, datumSentinel: datumSentinelStatus(), ranAt: new Date().toISOString() };
 }
 
 /* Datum audit: what each source's coordinates actually are, and how we know.
@@ -718,4 +768,5 @@ const DATUM_AUDIT = [
 if (typeof module !== 'undefined') module.exports = { DATUM_AUDIT,
   SOURCES, BUNDLED, runScreen, runSectionG, runSectionE, runReferralForecast,
   minDistanceMeters, directionFrom, queryArcgis, loadBundled, overallVerdict, inLabrador, fmt,
+  checkDatumSentinel, datumSentinelStatus, DATUM_SENTINEL,
 };
