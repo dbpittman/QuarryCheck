@@ -69,6 +69,19 @@ const SOURCES = [
   { id:'domestic_nf',    url:`${AGOL}/FFA_DomesticHarvestBlocks_NF/FeatureServer/0/query`, queryDist:200, nameFields:['DISTRICT','ZONE','SPECIES','OBJECTID'], authority:'GNL ArcGIS Online (forestry)', note:'Domestic harvest blocks (island)' },
   { id:'domestic_lb',    url:`${AGOL}/FFA_DomesticHarvestBlocks_LB/FeatureServer/0/query`, queryDist:200, nameFields:['DISTRICT','ZONE','SPECIES','OBJECTID'], authority:'GNL ArcGIS Online (forestry)', note:'Domestic harvest blocks (Labrador)' },
   { id:'fmd',            url:`${AGOL}/FFA_ForestManagementDistricts_NL/FeatureServer/6/query`, queryDist:0, nameFields:['MD_NAME','MD_NUM'], authority:'GNL ArcGIS Online (forestry)', note:'Forest management district (context: names the reviewing district office)' },
+  /* Crown LandUseDetails department-interest layers. Same host as crown_titles
+     (datum verified correct as served); schemas browser-verified only — the
+     build sandbox cannot reach this server, so nameFields are a best-guess
+     cascade and the first populated field wins. */
+  { id:'cl_bowater',     url:`${CROWN}/8/query`,  queryDist:200, nameFields:['NAME','DESCRIPTION','TITLENO','TITLETYPE','LABEL','OBJECTID'], authority:'Crown Lands (Land Use Atlas)', note:'Bowater land sales (historical paper-company land dispositions)' },
+  { id:'cl_forestry',    url:`${CROWN}/30/query`, queryDist:200, nameFields:['NAME','DESCRIPTION','DEPARTMENT','LABEL','OBJECTID'], authority:'Crown Lands (Land Use Atlas)', note:'Forestry land-use interest areas (departmental flag layer)' },
+  { id:'cl_wildlife',    url:`${CROWN}/29/query`, queryDist:200, nameFields:['NAME','DESCRIPTION','DEPARTMENT','LABEL','OBJECTID'], authority:'Crown Lands (Land Use Atlas)', note:'Wildlife land-use interest areas (departmental flag layer)' },
+  { id:'cl_hydro',       url:`${CROWN}/28/query`, queryDist:200, nameFields:['NAME','DESCRIPTION','DEPARTMENT','LABEL','OBJECTID'], authority:'Crown Lands (Land Use Atlas)', note:'Nalcor Hydro and NF Power land-use interest areas' },
+  { id:'cl_agri',        url:`${CROWN}/27/query`, queryDist:200, nameFields:['NAME','DESCRIPTION','DEPARTMENT','LABEL','OBJECTID'], authority:'Crown Lands (Land Use Atlas)', note:'Agriculture land-use interest areas (Crown flag layer)' },
+  { id:'cl_mines',       url:`${CROWN}/22/query`, queryDist:200, nameFields:['NAME','DESCRIPTION','DEPARTMENT','LABEL','OBJECTID'], authority:'Crown Lands (Land Use Atlas)', note:'Mines and Energy land-use interest areas' },
+  { id:'cl_tourism',     url:`${CROWN}/18/query`, queryDist:200, nameFields:['NAME','DESCRIPTION','DEPARTMENT','LABEL','OBJECTID'], authority:'Crown Lands (Land Use Atlas)', note:'Tourism, Culture, Arts and Recreation land-use interest areas' },
+  { id:'cl_federal',     url:`${CROWN}/25/query`, queryDist:200, nameFields:['NAME','DESCRIPTION','DEPARTMENT','LABEL','OBJECTID'], authority:'Crown Lands (Land Use Atlas)', note:'Federal lands' },
+  { id:'cl_mpr',         url:`${CROWN}/37/query`, queryDist:200, nameFields:['NAME','DESCRIPTION','MUNICIPALI','LABEL','OBJECTID'], authority:'Crown Lands (Land Use Atlas)', note:'Municipal plan restrictions' },
 
   // Mineral tenure / claims (referral)
   { id:'claims', datum:'nad27null', /*+shift margin*/         url:`${DNR}/Mineral_Lands/MapServer/0/query`, queryDist:200, nameFields:['LICENCE','CLIENT','OBJECTID'], authority:'dnrmaps (live tenure database)', note:'Map staked claims' },
@@ -740,7 +753,7 @@ function runReferralForecast(boundary, results) {
       agency, hits: hits.slice(0, 8), total: hits.length, why, sources: status, note: extraNote || null });
   };
 
-  add('Mineral Lands Division (tenure conflict)', ['claims','min_tenure'], 100,
+  add('Mineral Lands Division (tenure conflict)', ['claims','min_tenure','cl_mines'], 100,
     'Staked claims or mineral tenure on or near the boundary');
   add('Quarry Materials Exploration Licences', ['qmel_live','qmels'], 500,
     'QMEL polygons within 500 m (live provincial layer, cross-checked against the bundled snapshot dated 2024-10-25)');
@@ -755,21 +768,29 @@ function runReferralForecast(boundary, results) {
     'Protected or conserved area on or near the boundary');
   add('Nunatsiavut Government (LIL/LISA)', ['lu_lil','lu_lisa'], 100,
     'Labrador Inuit Lands or Settlement Area');
-  add('Municipality / MPAB', ['lu_municipal','lu_planning'], 100,
+  add('Municipality / MPAB', ['lu_municipal','lu_planning','cl_mpr'], 100,
     'Inside or adjacent to a municipal boundary or planning area; the municipal plan governs land use',
     'Where the planning area record carries an MPAB_LINK, the plan document is linked in the hits below.');
   add('Wind energy land reserve', ['lu_wind'], 100, 'Wind energy land reserve overlap');
   add('Specified material lands', ['lu_specified'], 100, 'Specified material lands overlap');
   add('Crown Lands (competing applications/titles)', ['crown_titles','crown_apps'], 100,
     'Crown title or application on or near the boundary');
-  add('Agriculture (development / RFP areas)', ['agri_rfp'], 100,
+  add('Agriculture (development / RFP areas)', ['agri_rfp','cl_agri'], 100,
     'Mapped agriculture development or RFP area on or near the boundary; agricultural land interests are referred for review');
-  add('Utility corridors (transmission lines)', ['tx_nalcor','tx_canvec'], 200,
+  add('Utility corridors (transmission and power interests)', ['tx_nalcor','tx_canvec','cl_hydro'], 200,
     'Mapped electrical transmission line within 200 m; utility easements and clearance requirements apply near corridors');
   add('Forestry (planned harvest / silviculture conflict)', ['fp_aop_harv','fp_fyop_harv','fp_aop_silv','fp_fyop_silv','fp_oa'], 200,
     'Overlap or proximity to blocks in the annual or five-year forestry operating plans — commercial harvest allocations, silviculture treatment areas, or designated operating areas. Timber in these blocks is committed or invested; the district forestry office will weigh the conflict');
+  add('Forestry / third-party timber interests (Crown records)', ['cl_forestry','cl_bowater'], 200,
+    'Crown-recorded forestry interest area or Bowater land-sale parcel on or near the boundary. Bowater parcels trace the historical paper-company land dispositions; timber and land rights on them may sit outside ordinary Crown tenure — verify the underlying title before assuming Crown quarry rights are clear');
   add('Forestry (domestic harvest blocks)', ['domestic_nf','domestic_lb'], 200,
     'Designated domestic (firewood) cutting block on or near the boundary; community cutting allocations are a forestry referral interest');
+  add('Wildlife Division (mapped interest areas)', ['cl_wildlife'], 200,
+    'Crown-recorded wildlife land-use interest area on or near the boundary (distinct from species occurrence data, which is not public)');
+  add('Tourism, Culture, Arts and Recreation (mapped interest areas)', ['cl_tourism'], 200,
+    'Crown-recorded tourism/culture/recreation interest area on or near the boundary');
+  add('Federal lands', ['cl_federal'], 200,
+    'Federal land parcel on or near the boundary; provincial quarry tenure cannot issue over federal land');
 
   // Geodetic monuments: a 5 m buffer is required around control survey markers (Lands Act s.65);
   // the GIS and Mapping Division must be contacted if a marker could be disturbed.

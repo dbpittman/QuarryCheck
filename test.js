@@ -301,6 +301,16 @@ async function main() {
        'forestry standing entry names the district by number and tolerates a null name');
     ok(/stumpage/.test(fStand.why) && /timber limits/.test(fStand.why) && /salvage/.test(fStand.why),
        'forestry wording covers stumpage, third-party timber limits, and salvage');
+    // Crown LandUseDetails layers registered; Bowater/forestry overlap produces the timber-interest referral
+    for (const id of ['cl_bowater','cl_forestry','cl_wildlife','cl_hydro','cl_agri','cl_mines','cl_tourism','cl_federal','cl_mpr'])
+      ok(app.SOURCES.some(s => s.id === id), `source registered: ${id}`);
+    const bowRes = { id:'cl_bowater', ok:true, queried:new Date().toISOString(),
+      src:{ id:'cl_bowater', note:'Bowater land sales', authority:'test', nameFields:['NAME'] },
+      features:[{ type:'Feature', properties:{ NAME:'Bowater Sale 12' }, geometry:{ type:'Polygon',
+        coordinates:[[[-58.7535,47.6075],[-58.7505,47.6075],[-58.7505,47.6105],[-58.7535,47.6105],[-58.7535,47.6075]]] } }] };
+    const rB = app.runReferralForecast(boundary, { cl_bowater: bowRes });
+    const tRef = rB.items.find(i => /third-party timber interests/.test(i.agency));
+    ok(tRef && tRef.total >= 1 && /Bowater/.test(tRef.why), 'Bowater parcel overlap produces the timber-interest referral');
   }
 
   console.log(`\n${pass} passed, ${fail} failed`);

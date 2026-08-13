@@ -267,6 +267,20 @@ the dnrmaps Map_Layers service:
 | domestic_nf / domestic_lb | AGOL FFA_DomesticHarvestBlocks | domestic (firewood) cutting blocks |
 | fmd | AGOL FFA_ForestManagementDistricts_NL/6 | context only: names the reviewing forest management district in the forestry standing entry (MD_NAME can be null; the number always renders) |
 
+Nine Crown LandUseDetails layers were added after the owner supplied the
+server's layer catalog from a browser (the build sandbox cannot reach this
+host): Bowater Land Sales (8) and the departmental land-use interest layers —
+Forestry (30), Wildlife (29), Nalcor Hydro and NF Power (28), Agriculture
+(27), Mines and Energy (22), Tourism/Culture/Recreation (18), Federal Lands
+(25), and Municipal Plan Restrictions (37). Bowater + Forestry answer the
+third-party timber question: Bowater parcels trace the paper-company land
+dispositions, and the report warns that title on them may sit outside
+ordinary Crown tenure. Same host as crown_titles (datum verified correct as
+served). Attribute schemas are browser-verified only; nameFields are a
+best-guess cascade and the display name falls back to OBJECTID if none match
+— owner to eyeball the first live report over known ground and correct field
+names if hits render anonymously.
+
 Datum note: tx_nalcor/tx_canvec sit on the same Map_Layers service as the
 roads layer (13/14) verified correct as served; they are treated as
 NAD83-equivalent by service-level pattern, not independently proven. AGOL
