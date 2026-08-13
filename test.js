@@ -242,6 +242,47 @@ async function main() {
     ok(app.QUERY_TIMEOUT_2 > app.QUERY_TIMEOUT_1, 'retry is more patient than the first attempt');
   }
 
+  console.log('\n[13] referral forecast: new sources, computed rules, standing block');
+  {
+    for (const id of ['npa_live','qmel_live','q_proposed','agri_rfp','tx_nalcor','tx_canvec'])
+      ok(app.SOURCES.some(s => s.id === id), `source registered: ${id}`);
+    // EA threshold: small boundary is unflagged, >10 ha is flagged (s.33(3))
+    const small = app.runReferralForecast(boundary, {});
+    const ea1 = small.standing.find(s => /Environmental Assessment/.test(s.agency));
+    ok(ea1 && !ea1.flagged && /10 h/.test(ea1.why), 'sub-threshold boundary: EA advisory, not flagged');
+    ok(/s\.52/.test(ea1.why), 'sub-threshold wording carries the s.52 aggregation rule');
+    const big = global.turf.polygon([[[-56.00,48.50],[-55.995,48.50],[-55.995,48.504],[-56.00,48.504],[-56.00,48.50]]]);
+    const rBig = app.runReferralForecast(big, {});
+    const ea2 = rBig.standing.find(s => /REGISTRATION REQUIRED/.test(s.agency));
+    ok(ea2 && ea2.flagged && rBig.areaHa > 10, `>10 ha boundary flags EA registration (${rBig.areaHa.toFixed(2)} ha)`);
+    // salmon river s.28: watercourse within 200 m flags the rule
+    const streamRes = { id:'stream_isl', ok:true, queried:new Date().toISOString(),
+      src:{ id:'stream_isl', note:'Stream (island)', authority:'test', nameFields:['OBJECTID'] },
+      features:[{ type:'Feature', properties:{OBJECTID:1}, geometry:{ type:'LineString', coordinates:[[-58.7530,47.6086],[-58.7515,47.6090]] } }] };
+    const rS = app.runReferralForecast(boundary, { stream_isl: streamRes });
+    const sal = rS.standing.find(s => /salmon/.test(s.agency));
+    ok(sal && sal.flagged && /s\.28/.test(sal.why), 'watercourse within 200 m flags the s.28 salmon-river rule');
+    const dfo = rS.standing.find(s => /Fisheries and Oceans/.test(s.agency));
+    ok(dfo && dfo.flagged, 'water within 100 m flags the DFO line');
+    // geodetic monuments: NLGN marker within 100 m produces a GMD referral
+    const monRes = { id:'nlgn', ok:true, queried:new Date().toISOString(),
+      src:{ id:'nlgn', note:'NLGN monuments', authority:'test', nameFields:['number'] },
+      features:[{ type:'Feature', properties:{ number:'TEST-1' }, geometry:{ type:'Point', coordinates:[-58.7521,47.6088] } }] };
+    const rM = app.runReferralForecast(boundary, { nlgn: monRes });
+    const gmd = rM.items.find(i => /GIS and Mapping/.test(i.agency));
+    ok(gmd && gmd.total >= 1 && /5 m/.test(gmd.why), 'NLGN monument within 100 m produces the GMD referral');
+    // NPA check carries the live layer in its sources
+    const gN = app.runSectionG(boundary, {});
+    const npa = gN.find(c => c.id === 'NPA');
+    ok(npa && npa.sources.some(s => s.id === 'npa_live'), 'NPA check includes the live AGOL layer in its sources');
+    // Labrador boundary raises the Indigenous consultation line
+    const labB = global.turf.polygon([[[-61.0,53.5],[-60.999,53.5],[-60.999,53.501],[-61.0,53.501],[-61.0,53.5]]]);
+    const rL = app.runReferralForecast(labB, {});
+    const ind = rL.standing.find(s => /Indigenous consultation/.test(s.agency));
+    ok(ind && ind.flagged && /Innu Nation/.test(ind.why) && /NunatuKavut/.test(ind.why),
+       'Labrador boundary flags Indigenous consultation naming all three parties');
+  }
+
   console.log(`\n${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
 }

@@ -55,6 +55,12 @@ const SOURCES = [
   { id:'q_permits', datum:'nad27null',      url:`${DNR}/Mineral_Lands/MapServer/8/query`, queryDist:500, nameFields:['COMPANY','FILENUMBER','PERMIT_ID'], authority:'dnrmaps (live tenure database)', note:'Quarry permits' },
   { id:'q_leases', datum:'nad27null',       url:`${DNR}/Mineral_Lands/MapServer/9/query`, queryDist:500, nameFields:['COMPANY','FILENUMBER','PERMIT_ID'], authority:'dnrmaps (live tenure database)', note:'Quarry leases' },
   { id:'q_agol_mirror',  url:`${AGOL}/Quarry_Permits_and_Leases___July_27_2026_/FeatureServer/0/query`, queryDist:500, nameFields:['COMPANY','FILENUMBER'], authority:'GNL ArcGIS Online (dated mirror)', note:'Boundary_Status cross-check only', optional:true },
+  { id:'npa_live',       url:`${AGOL}/No_Quarry_Permits_Available_VIEW/FeatureServer/2/query`, queryDist:200, nameFields:['Location','Description','OBJECTID'], authority:'GNL ArcGIS Online (Energy and Mines)', note:'No Permits Available areas, s.5 Quarry Materials Regulations (live layer)' },
+  { id:'qmel_live',      url:`${AGOL}/Quarry_Material_Exploration_License/FeatureServer/3/query`, queryDist:500, nameFields:['Licensee','Lic_Num','File_Num','Status','Material'], authority:'GNL ArcGIS Online (Energy and Mines)', note:'Quarry Material Exploration Licences (live layer)' },
+  { id:'q_proposed',     url:`${AGOL}/Proposed_Quarries_Boundaries_view/FeatureServer/0/query`, queryDist:500, nameFields:['Applicant','FILENUMBER','QNUM','ApplicationType'], authority:'GNL ArcGIS Online (Energy and Mines)', note:'Proposed quarry boundaries (pending applications)' },
+  { id:'agri_rfp',       url:`${AGOL}/AgricultureBoundaries/FeatureServer/8/query`, queryDist:200, nameFields:['AOI_NAME','PolygonID','OBJECTID'], authority:'GNL ArcGIS Online (agriculture)', note:'Agriculture development / RFP areas' },
+  { id:'tx_nalcor',      url:`${DNR}/Map_Layers/MapServer/15/query`, queryDist:200, nameFields:['TL_ID','OBJECTID'], authority:'dnrmaps (Geoscience Atlas)', note:'NL Hydro (Nalcor) transmission lines' },
+  { id:'tx_canvec',      url:`${DNR}/Map_Layers/MapServer/16/query`, queryDist:200, nameFields:['PROVIDER','TYPE','OBJECTID'], authority:'dnrmaps (Geoscience Atlas)', note:'CanVec transmission lines (federal compilation)' },
 
   // Mineral tenure / claims (referral)
   { id:'claims', datum:'nad27null', /*+shift margin*/         url:`${DNR}/Mineral_Lands/MapServer/0/query`, queryDist:200, nameFields:['LICENCE','CLIENT','OBJECTID'], authority:'dnrmaps (live tenure database)', note:'Map staked claims' },
@@ -101,11 +107,11 @@ const BUNDLED = [
   { id:'building_control', nameFields:['name'], path:'data/building_control.geojson', queryDist:200, snapshot:'2026-08-11',
     authority:'Municipal Affairs KMZ, snapshot 2026-08-11', note:'Building control areas (corridor polygons) along protected roads' },
   { id:'no_permit_areas', nameFields:['name'], path:'data/no_permit_areas.geojson', queryDist:200, snapshot:'2026-08-13',
-    authority:'IET quarries site KMZ, snapshot 2026-08-13', note:'No Permits Available areas, s.5 Quarry Materials Regulations (5 designated areas). Listing is province-described work-in-progress; absence of a polygon is not proof none exists.' },
+    authority:'Energy and Mines (formerly IET) quarries site KMZ, snapshot 2026-08-13', note:'No Permits Available areas, s.5 Quarry Materials Regulations (5 designated areas). Listing is province-described work-in-progress; absence of a polygon is not proof none exists.' },
   { id:'qmels', nameFields:['name'], path:'data/qmels.geojson', queryDist:500, snapshot:'2024-10-25',
-    authority:'IET quarries site KMZ, dated 2024-10-25 (STALE: many licences since expired or issued)', note:'Quarry Materials Exploration Licences' },
+    authority:'Energy and Mines (formerly IET) quarries site KMZ, dated 2024-10-25 (STALE: many licences since expired or issued)', note:'Quarry Materials Exploration Licences' },
   { id:'q_snapshot', nameFields:['name'], path:'data/quarry_tenure_snapshot.geojson', queryDist:500, snapshot:'2026-08-13',
-    authority:'IET quarries site KMZ, snapshot 2026-08-13; datum-verified against permit 151600 (104.7 m to Route 470 vs ~100 m ground truth, area 2.00 ha exact)', note:'Quarry permit/lease boundary polygons (1,340)' },
+    authority:'Energy and Mines (formerly IET) quarries site KMZ, snapshot 2026-08-13; datum-verified against permit 151600 (104.7 m to Route 470 vs ~100 m ground truth, area 2.00 ha exact)', note:'Quarry permit/lease boundary polygons (1,340)' },
 ];
 
 /* ---------------- geometry helpers (require turf global or module) ---------------- */
@@ -583,17 +589,20 @@ function runSectionG(boundary, results, opts) {
   }
 
   { // No Permits Available areas (s.5) — not a Section G item but application-fatal
-    const r = results['no_permit_areas'];
-    if (r && r.ok) {
-      const n = nearest(boundary, results, ['no_permit_areas'], f => f.properties.name || 'designated area');
+    const snap = results['no_permit_areas'], live = results['npa_live'];
+    const ids = ['no_permit_areas','npa_live'];
+    if ((snap && snap.ok) || (live && live.ok)) {
+      const n = nearest(boundary, results, ids, f => f.properties.name || f.properties.Location || 'designated area');
       const v = (n && n.dist === 0) ? 'ENCROACHES' : 'ADVISORY';
+      const notes = [];
+      if (live && live.ok) notes.push('Screened against the province\'s live No Permits Available layer' + (snap && snap.ok ? ' and the bundled snapshot' : '') + '. The listing is province-described work-in-progress; absence of a polygon is not proof none exists — confirm with the Quarries Section.');
+      else notes.push('Live NPA layer unreachable this run; screened against a snapshot of a province-described work-in-progress listing. Absence of a polygon is not proof none exists; confirm with the Quarries Section.');
       checks.push({ id:'NPA', label:'No Permits Available area (s.5, Quarry Materials Regulations)', setback:0,
-        verdict:v, nearest:n, sources: sourceStatus(results, ['no_permit_areas']),
-        notes: ['Screened against a snapshot of a province-described work-in-progress listing. Absence of a polygon is not proof none exists; confirm with the Quarries Section.'] });
+        verdict:v, nearest:n, sources: sourceStatus(results, ids), notes });
     } else {
       checks.push({ id:'NPA', label:'No Permits Available area (s.5, Quarry Materials Regulations)', setback:0,
-        verdict:'ADVISORY', nearest:null, sources: sourceStatus(results, ['no_permit_areas']),
-        notes: ['Snapshot not yet bundled. Not screenable; confirm with the Quarries Section.'] });
+        verdict:'ADVISORY', nearest:null, sources: sourceStatus(results, ids),
+        notes: ['Neither the live NPA layer nor the bundled snapshot answered. Not screenable this run; confirm with the Quarries Section.'] });
     }
   }
 
@@ -725,11 +734,13 @@ function runReferralForecast(boundary, results) {
 
   add('Mineral Lands Division (tenure conflict)', ['claims','min_tenure'], 100,
     'Staked claims or mineral tenure on or near the boundary');
-  add('Quarry Materials Exploration Licences', ['qmels'], 500,
-    'QMEL polygons within 500 m (snapshot dated 2024-10-25; verify currency with the Quarries Section)');
-  add('Quarries Section (nearby tenure)', ['q_apps','q_sub','q_permits','q_leases','q_snapshot'], 500,
-    'Existing quarry tenure within 500 m (positions datum-corrected: the provincial tenure server serves untransformed NAD27 coordinates, 52-74 m off in NL; NTv2 shift applied here)',
+  add('Quarry Materials Exploration Licences', ['qmel_live','qmels'], 500,
+    'QMEL polygons within 500 m (live provincial layer, cross-checked against the bundled snapshot dated 2024-10-25)');
+  add('Quarries Section (nearby tenure)', ['q_apps','q_sub','q_permits','q_leases','q_snapshot','q_proposed'], 500,
+    'Existing or proposed quarry tenure within 500 m (positions of dnrmaps tenure layers datum-corrected: the provincial tenure server serves untransformed NAD27 coordinates, 52-74 m off in NL; NTv2 shift applied here)',
     lab ? 'Labrador tenure: the province flags its own Labrador quarry boundaries as "Unconfirmed" or "Unavailable" (circle around a coordinate). Distances to these features are not reliable. The province\'s AGOL mirror carries a Boundary_Status field; cross-check below.' : null);
+  add('Quarries Section — No Permits Available area (s.5)', ['npa_live','no_permit_areas'], 200,
+    'Designated No Permits Available area on or near the boundary — a permit cannot issue inside one');
   add('Water Resources Management Division', ['lu_pws','pwsa','intakes','water_rights','nat_drain','flood'], 1000,
     'Public water supply areas, intakes/wellheads, water rights, natural drainage, or flood extents nearby');
   add('Parks and protected areas', ['lu_protected','lu_cpcad','prov_protected','mmnpr'], 100,
@@ -743,6 +754,21 @@ function runReferralForecast(boundary, results) {
   add('Specified material lands', ['lu_specified'], 100, 'Specified material lands overlap');
   add('Crown Lands (competing applications/titles)', ['crown_titles','crown_apps'], 100,
     'Crown title or application on or near the boundary');
+  add('Agriculture (development / RFP areas)', ['agri_rfp'], 100,
+    'Mapped agriculture development or RFP area on or near the boundary; agricultural land interests are referred for review');
+  add('Utility corridors (transmission lines)', ['tx_nalcor','tx_canvec'], 200,
+    'Mapped electrical transmission line within 200 m; utility easements and clearance requirements apply near corridors');
+
+  // Geodetic monuments: a 5 m buffer is required around control survey markers (Lands Act s.65);
+  // the GIS and Mapping Division must be contacted if a marker could be disturbed.
+  {
+    const mons = collectWithin(boundary, results, ['nlgn'], 100);
+    const status = sourceStatus(results, ['nlgn']);
+    if (mons.length || status.some(s => !s.ok)) items.push({
+      agency:'GIS and Mapping Division (geodetic monuments)', hits: mons.slice(0, 8), total: mons.length,
+      why:'NLGN control monument within 100 m of the boundary. A 5 m protective buffer applies around control survey markers (Lands Act s.65); contact GMD@gov.nl.ca before any activity that could disturb a marker.',
+      sources: status, note:null });
+  }
 
   // Boundary_Status cross-check from AGOL mirror
   const mirror = results['q_agol_mirror'];
@@ -759,10 +785,67 @@ function runReferralForecast(boundary, results) {
   // Permanent unknowns, always listed.
   const unknowns = [
     { agency:'Provincial Archaeology Office', why:'Archaeological potential data is not public by design. Not screenable; the referral to this office will occur regardless.' },
-    { agency:'Wildlife Division (rare/sensitive species)', why:'Species occurrence data is not public by design. Not screenable; the referral will occur regardless.' },
+    { agency:'Wildlife Division (rare/sensitive species)', why:'Species occurrence data is not public by design; the referral will occur regardless. Standing constraints from comparable quarry reviews: no vegetation clearing within 800 m of a bald eagle or osprey nest during nesting season (March 15 - July 31; 200 m the rest of the year), and protections for listed bats and Bank Swallows, which favour exposed banks and faces of the kind quarries create. Report any raptor nest to WildlifeReferrals@gov.nl.ca.' },
   ];
 
-  return { items, unknowns, mirrorFlags, labrador: lab };
+  // Computed regulatory triggers + standing authorizations. Always listed: a
+  // referral or approval noted here that turns out not to apply costs nothing;
+  // one left out can cost a season. Wording sourced from the Environmental
+  // Assessment Regulations, 2003 (NLR 54/03) and departmental advice issued on
+  // comparable quarry projects (EA 2396).
+  const T2 = getTurf();
+  let areaHa = null;
+  try { areaHa = T2.area(boundary) / 10000; } catch (e) {}
+  const standing = [];
+
+  if (areaHa !== null && areaHa > 10) {
+    standing.push({ agency:'Environmental Assessment Division — REGISTRATION REQUIRED', flagged:true,
+      why:`This boundary is ${areaHa.toFixed(2)} ha. A quarrying operation covering more than 10 hectares must be registered for environmental assessment (Environmental Assessment Regulations, 2003, s.33(3)).` });
+  } else {
+    standing.push({ agency:'Environmental Assessment Division',
+      why:`${areaHa !== null ? `This boundary is ${areaHa.toFixed(2)} ha — below` : 'Below'} the 10 ha EA registration threshold for quarrying (s.33(3)). Note the aggregation rule: an extension or a new operation adjacent to an existing one must be registered when the combined area exceeds the threshold (s.52).` });
+  }
+
+  {
+    const wc = collectWithin(boundary, results, ['stream_isl','stream_lb','wline_isl','wline_lb','topo_wline','wbody_isl','wbody_lb','topo_wpoly'], 200);
+    if (wc.length) {
+      standing.push({ agency:'Environmental Assessment Division — scheduled salmon rivers (s.28)', flagged:true,
+        why:`Mapped watercourse or waterbody within 200 m (${wc.length} feature(s), nearest ${fmt(wc[0].dist)}). Any undertaking within 200 m of the high water mark of a scheduled salmon river must be registered for environmental assessment regardless of size (s.28). Whether a given watercourse is a scheduled salmon river is not determinable from these map layers — verify against the federal schedule before assuming this does not apply.` });
+    } else {
+      standing.push({ agency:'Scheduled salmon rivers (EA Regulations s.28)',
+        why:'No mapped watercourse within 200 m this run. If any watercourse near the site is a scheduled salmon river, EA registration is mandatory within 200 m of its high water mark, regardless of operation size.' });
+    }
+  }
+
+  {
+    const wetNear = collectWithin(boundary, results, ['wbody_isl','wbody_lb','topo_wpoly','stream_isl','stream_lb','wline_isl','wline_lb','topo_wline'], 100);
+    standing.push({ agency:'Fisheries and Oceans Canada (federal)', flagged: wetNear.length > 0,
+      why: (wetNear.length ? `Mapped water feature within 100 m (nearest ${fmt(wetNear[0].dist)}). ` : '')
+        + 'Work in or near water engages the federal Fisheries Act; consult DFO\'s Projects Near Water process before working near any watercourse or waterbody, mapped or not.' });
+  }
+
+  standing.push({ agency:'Water Resources Management Division (water use)',
+    why:'A water use licence under the Water Resources Act is required before using water from any source for any purpose (e.g. dust suppression, washing). Effluent or runoff leaving the site must conform to the Environmental Control Water and Sewage Regulations.' });
+  standing.push({ agency:'Forestry (cutting and fire season)',
+    why:'A Cutting Permit under the Cutting of Timber Regulations is required before any timber harvesting or removal. During forest fire season, an Operating Permit (and a Permit to Burn for burning on or within 300 m of forest land) is required under the Forest Fire Regulations.' });
+  standing.push({ agency:'Environment (pollution prevention)',
+    why:'Operations are subject to the Air Pollution Control Regulations (dust; burning of waste is prohibited per Schedule D). All waste generated on site must go to an approved disposal facility.' });
+  standing.push({ agency:'Government Service Centre (fuel storage and spills)',
+    why:'Fuel storage tank systems other than small heating-appliance tanks (2,500 L or less) must be registered before installation. Used oil handling must comply with the Used Oil and Used Glycol Control Regulations. A spill contingency plan is expected; spills are reported to the 24-hour environmental emergencies line.' });
+  standing.push({ agency:'Occupational Health and Safety',
+    why:'Site activities, including those of any contractors engaged, must comply with the Occupational Health and Safety Act and regulations.' });
+  standing.push({ agency:'Environment and Climate Change Canada (federal, migratory birds)',
+    why:'Clearing should avoid the migratory bird nesting season (roughly mid-April to mid-August in this region) or be preceded by nest surveys; maintaining a 30 m buffer from the high water mark of waterbodies preserves movement corridors.' });
+  standing.push({ agency:'Transportation and Infrastructure (highway access)',
+    why:'A new or altered access onto a provincial highway requires an access permit; haul routes onto protected roads engage the Protected Road Zoning Regulations (screened above where mapped).' });
+  standing.push({ agency:'Tourism, Culture, Arts and Recreation',
+    why:'Near tourism assets or viewsheds, expect advice on visual screening, scheduling around peak visitor season, and site rehabilitation planning.' });
+  if (lab) {
+    standing.push({ agency:'Indigenous consultation (Labrador)', flagged:true,
+      why:'Applications in Labrador are referred under the province\'s Indigenous consultation processes — Nunatsiavut Government (screened above where LIL/LISA is mapped), Innu Nation, and NunatuKavut Community Council depending on asserted or established rights in the area.' });
+  }
+
+  return { items, unknowns, standing, areaHa, mirrorFlags, labrador: lab };
 }
 
 function fmt(m) {

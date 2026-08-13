@@ -248,6 +248,52 @@ snapshot dates in app.js.
 - The No Permits Available listing is described by the province as
   work-in-progress; a clean NPA result is reported as advisory, not clearance.
 
+## Referral forecast — live sources and standing block (added 2026-08)
+
+Six live sources added after a survey of the province's AGOL organization and
+the dnrmaps Map_Layers service:
+
+| id | service | note |
+|---|---|---|
+| npa_live | AGOL No_Quarry_Permits_Available_VIEW/2 | 6 designated areas at time of adding — one more than the bundled snapshot's 5; the NPA check now cross-checks live + snapshot |
+| qmel_live | AGOL Quarry_Material_Exploration_License/3 | 38 licences live; supplements the stale 2024-10-25 snapshot |
+| q_proposed | AGOL Proposed_Quarries_Boundaries_view/0 | 431 pending application boundaries; feeds the Quarries Section referral line |
+| agri_rfp | AGOL AgricultureBoundaries/8 | 71 agriculture development/RFP polygons |
+| tx_nalcor | dnrmaps Map_Layers/15 | Nalcor transmission lines |
+| tx_canvec | dnrmaps Map_Layers/16 | CanVec transmission lines |
+
+Datum note: tx_nalcor/tx_canvec sit on the same Map_Layers service as the
+roads layer (13/14) verified correct as served; they are treated as
+NAD83-equivalent by service-level pattern, not independently proven. AGOL
+layers are Web Mercator native and reproject cleanly.
+
+The forecast also gained a monuments referral (NLGN marker within 100 m →
+GIS and Mapping Division; 5 m protective buffer, Lands Act s.65 — the NLGN
+data was already being queried for the Survey Control section) and a standing
+authorizations block listed on every report. Two entries are computed:
+
+- **EA registration, s.33(3)** (Environmental Assessment Regulations, 2003,
+  NLR 54/03): quarrying covering more than 10 ha must be registered. The
+  boundary area is compared to the threshold; over 10 ha renders a flagged
+  REGISTRATION REQUIRED entry. Sub-threshold reports carry the s.52
+  aggregation rule (extension + existing operation exceeding the threshold
+  together must register).
+- **Scheduled salmon rivers, s.28**: any undertaking within 200 m of the high
+  water mark of a scheduled salmon river must register regardless of size.
+  Mapped watercourses within 200 m flag this conditionally; the schedule
+  itself is not determinable from the map layers and the wording says so.
+
+The remaining standing entries (water use licence, cutting/fire permits, air
+pollution and waste, fuel storage registration, OHS, DFO Projects Near Water,
+ECCC migratory birds, highway access, tourism, and — Labrador only —
+Indigenous consultation naming Nunatsiavut, Innu Nation, and NunatuKavut) are
+sourced from the departmental advice record on a comparable quarry EA
+(EA 2396, Peak Pond Quarry Extension) and are advisory wording only: they
+carry no verdicts and no map queries.
+
+Department rename: IET became Energy and Mines in late October 2025; authority
+strings updated accordingly ("Energy and Mines (formerly IET)").
+
 ## Validation record
 
 - Permit 151600 (Rose Blanche): full regression anchor. Title match <1 m;

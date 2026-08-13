@@ -893,6 +893,12 @@ function render(out, meta){
   for (const u of out.referrals.unknowns) {
     h += `<div class="ref"><h3>${esc(u.agency)}</h3><div class="why">${esc(u.why)}</div></div>`;
   }
+  if (out.referrals.standing && out.referrals.standing.length) {
+    h += `<h2>Other authorizations and standing referrals</h2><p class="note">Listed regardless of screening results — a noted referral that turns out not to apply costs nothing; one left out can cost a season. Items flagged below were triggered by this boundary's size or surroundings.</p>`;
+    for (const s of out.referrals.standing) {
+      h += `<div class="ref${s.flagged ? ' warnbox' : ''}"><h3>${esc(s.agency)}</h3><div class="why">${esc(s.why)}</div></div>`;
+    }
+  }
 
   h += '</section><section class="rpt"><h2>Survey control — NL Geodetic Network</h2>';
   if (out.monuments && out.monuments.length) {
