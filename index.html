@@ -197,7 +197,10 @@ footer{margin-top:48px;border-top:2px solid var(--ink);padding-top:10px;font-siz
 <script>
 'use strict';
 const $ = s => document.querySelector(s);
+/* Boundary editing (draw + drag-adjust) is pre-release; enable with ?draw=1 */
+const EDIT_TOOLS = new URLSearchParams(location.search).has('draw');
 const drop = $('#drop'), fileIn = $('#file'), errBox = $('#err'), prog = $('#progress');
+if (!EDIT_TOOLS) $('#drawrow').style.display = 'none';
 
 drop.addEventListener('click', () => fileIn.click());
 drop.addEventListener('keydown', e => { if (e.key==='Enter'||e.key===' ') fileIn.click(); });
@@ -459,7 +462,7 @@ async function screenBoundary(boundary, access, meta){
     prog.textContent = `Completed in ${((Date.now()-t0)/1000).toFixed(1)} s. `
       + (failed.length? `Unreachable sources: ${failed.join(', ')} — affected checks are marked ADVISORY.` : 'All sources answered.');
     render(out, { areaHa, fileName: meta.fileName });
-    $('#adjrow').style.display='block';
+    if (EDIT_TOOLS) $('#adjrow').style.display='block';
     $('#rescreenbtn').style.display='none';
     $('#adjhint').textContent='';
   } catch (e) {
