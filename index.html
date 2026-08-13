@@ -390,9 +390,21 @@ function showMap(boundary, access, blank){
     map.fitBounds(bbox, { padding:30 });
   }
 }
+/* Remove all per-run map graphics. Layers must go before sources: several
+   layers (bndline, wtie-lbl, the -case outlines) draw from a shared source,
+   and MapLibre refuses to remove a source that a surviving layer still
+   references — the stale source then collides with the next run's addSource. */
+function clearRunGraphics(){
+  const LYRS = ['bnd','bndline-case','bndline','acc',
+    'buf50-case','buf50','buf90-case','buf90','buf200-case','buf200','buf1k-case','buf1k',
+    'hits-fill','hits-line-case','hits-line','hits-pt','hits-mon','road-names',
+    'wtie','wtie-lbl','draw-line','draw-pts'];
+  const SRCS = ['bnd','acc','buf50','buf90','buf200','buf1k','hits','wtie','draw'];
+  for (const id of LYRS) if (map.getLayer(id)) map.removeLayer(id);
+  for (const id of SRCS) if (map.getSource(id)) map.removeSource(id);
+}
 function addLayers(boundary, access){
-  const rm = id => { if (map.getLayer(id)) map.removeLayer(id); if (map.getSource(id)) map.removeSource(id); };
-  ['bnd','bndline-case','bndline','acc','buf50-case','buf50','buf90-case','buf90','buf200-case','buf200','buf1k-case','buf1k','hits-line-case'].forEach(rm);
+  clearRunGraphics();
   map.addSource('bnd', { type:'geojson', data: boundary });
   map.addLayer({ id:'bnd', type:'fill', source:'bnd', paint:{ 'fill-color':'#FFFFFF','fill-opacity':0.12 } });
   map.addLayer({ id:'bndline-case', type:'line', source:'bnd', paint:{ 'line-color':'rgba(255,255,255,0.9)','line-width':4.5 } });
@@ -808,6 +820,9 @@ function drawWaterTie(out){
   const line = turf.lineString([pair.pa, pair.pb]);
   const mid = turf.midpoint(turf.point(pair.pa), turf.point(pair.pb));
   mid.properties = { d: fmt(pair.dist) };
+  if (map.getLayer('wtie-lbl')) map.removeLayer('wtie-lbl');
+  if (map.getLayer('wtie')) map.removeLayer('wtie');
+  if (map.getSource('wtie')) map.removeSource('wtie');
   map.addSource('wtie', { type:'geojson', data:{ type:'FeatureCollection', features:[line, mid] } });
   map.addLayer({ id:'wtie', type:'line', source:'wtie',
     filter:['==',['geometry-type'],'LineString'],
