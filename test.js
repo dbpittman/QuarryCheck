@@ -418,6 +418,19 @@ async function main() {
     ok(r.stale === true, 'age computation is unchanged: the file is still old and says so');
   }
 
+  console.log('\n[18] ILUC water supplies: proposed protections feed the Water Resources line');
+  {
+    ok(app.SOURCES.some(x => x.id === 'iluc_pws'), 'iluc_pws registered');
+    const ilucRes = { id:'iluc_pws', ok:true, queried:new Date().toISOString(),
+      src:{ id:'iluc_pws', note:'ILUC water supplies', authority:'test', nameFields:['NomID'], accuracy:10 },
+      features:[{ type:'Feature', properties:{ NomID:'W-9' }, geometry:{ type:'Polygon',
+        coordinates:[[[-58.7535,47.6075],[-58.7505,47.6075],[-58.7505,47.6105],[-58.7535,47.6105],[-58.7535,47.6075]]] } }] };
+    const r = app.runReferralForecast(boundary, { iluc_pws: ilucRes });
+    const wrm = r.items.find(i => /Water Resources/.test(i.agency));
+    ok(wrm && wrm.total >= 1 && /Inter-Departmental Land Use Committee/.test(wrm.why),
+       'ILUC polygon trips the Water Resources referral with in-process wording');
+  }
+
   console.log(`\n${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
 }

@@ -110,6 +110,7 @@ screening value, then the notable omissions.
 | Intakes_and_Wellheads/0 | intake/wellhead points | LIVE `intakes` | Water Resources referral |
 | Water_Rights/0 | licensed water rights | LIVE `water_rights` | same |
 | Natural_Drainage_Outside_Protected_Area/0 | drainage designations | LIVE `nat_drain` | same |
+| ILUC_Water_Supplies/0 | PWS areas before the Inter-Departmental Land Use Committee for protected status (11) | LIVE `iluc_pws` | early warning: proposed protections not yet in the designated layers; ground clear today may be protected before a permit issues |
 | Flood_Risk_Extents/0 | mapped flood extents | RETIRED from live use | spatial queries take 18–30 s server-side (huge floodplain polygons), longer than the retry budget; replaced by a bundled envelope snapshot (§4) |
 
 ### Wetland / land cover
@@ -143,7 +144,7 @@ screening value, then the notable omissions.
 
 | Service | Content | Status | Reasoning |
 |---|---|---|---|
-| ILUC_InScopeAreas, ILUC_Water_Supplies | interim land use control areas (apparent) | CANDIDATE | name suggests interim land-use restrictions that could bind a site; semantics unverified — inspect before wiring |
+| ILUC_InScopeAreas | wind energy call-for-bids areas (nominated/successful bidder/reserve) | OMITTED | inspected: demonstration-grade wind-bid data by the province's own description; the wind reserve is already screened from the authoritative dnrmaps layer |
 | Proposed_ERWPP | proposed reserve/protected area (apparent) | CANDIDATE | a *proposed* protected area is exactly the kind of conflict worth flagging early; semantics unverified |
 | LandslideSites | mapped landslide sites | CANDIDATE | site-hazard advisory value, not a referral; low priority |
 | WLD_BigGameManagementArea | game management zones | OMITTED | hunting administration; no permit bearing |

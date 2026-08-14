@@ -99,6 +99,7 @@ const SOURCES = [
   { id:'lu_wind', accuracy:10,        datum:'nad27null', url:`${DNR}/Land_Use/MapServer/8/query`, queryDist:200, nameFields:['NAME','OBJECTID'], authority:'dnrmaps', note:'Wind energy land reserve' },
 
   // Water Resources (AGOL is authoritative for these; WRMD publisher)
+  { id:'iluc_pws', accuracy:10, url:`${AGOL}/ILUC_Water_Supplies/FeatureServer/0/query`, queryDist:1000, nameFields:['NomID','Status','OBJECTID'], authority:'GNL ArcGIS Online (ILUC)', note:'Public water supplies before the Inter-Departmental Land Use Committee for protected status (proposed/in-process, not yet designated)' },
   { id:'pwsa', accuracy:10,           url:`${AGOL}/Public_Water_Supply_Areas/FeatureServer/0/query`, queryDist:100, nameFields:['NAME','PWS_NAME','OBJECTID'], authority:'GNL ArcGIS Online (WRMD)', note:'Public water supply areas' },
   { id:'intakes', accuracy:10,        url:`${AGOL}/Intakes_and_Wellheads/FeatureServer/0/query`, queryDist:1000, nameFields:['NAME','TYPE','OBJECTID'], authority:'GNL ArcGIS Online (WRMD)', note:'Intakes and wellheads' },
   { id:'water_rights', accuracy:10,   url:`${AGOL}/Water_Rights/FeatureServer/0/query`, queryDist:1000, nameFields:['NAME','HOLDER','OBJECTID'], authority:'GNL ArcGIS Online (WRMD)', note:'Water rights' },
@@ -800,8 +801,8 @@ function runReferralForecast(boundary, results) {
   add('Quarries Section — No Permits Available area (s.5)', ['npa_live','no_permit_areas'], 200,
     'Designated No Permits Available area on or near the boundary — a permit cannot issue inside one', null,
     {tier:'REG', cite:'Quarry Materials Regulations, s.5'});
-  add('Water Resources Management Division', ['lu_pws','pwsa','intakes','water_rights','nat_drain','flood'], 1000,
-    'Public water supply areas, intakes/wellheads, water rights, natural drainage, or flood risk study areas nearby (flood screened as study-area envelopes: a hit means a study exists in the vicinity; consult the authoritative extents)');
+  add('Water Resources Management Division', ['lu_pws','pwsa','iluc_pws','intakes','water_rights','nat_drain','flood'], 1000,
+    'Public water supply areas, intakes/wellheads, water rights, natural drainage, or flood risk study areas nearby (flood screened as study-area envelopes: a hit means a study exists in the vicinity; consult the authoritative extents). ILUC hits are water supplies moving through the Inter-Departmental Land Use Committee for protected status — proposed protections not yet designated; ground that is clear today may be protected before a permit issues');
   add('Parks and protected areas', ['lu_protected','lu_cpcad','prov_protected','mmnpr'], 100,
     'Protected or conserved area on or near the boundary');
   add('Nunatsiavut Government (LIL/LISA)', ['lu_lil','lu_lisa'], 100,

@@ -105,6 +105,7 @@ table.stack td::before{content:attr(data-l) ": ";font-weight:700;text-transform:
 <tr><td data-l="service">Intakes_and_Wellheads/0</td><td data-l="content">intake/wellhead points</td><td data-l="status">LIVE <code>intakes</code></td><td data-l="use / reasoning">Water Resources referral</td></tr>
 <tr><td data-l="service">Water_Rights/0</td><td data-l="content">licensed water rights</td><td data-l="status">LIVE <code>water_rights</code></td><td data-l="use / reasoning">same</td></tr>
 <tr><td data-l="service">Natural_Drainage_Outside_Protected_Area/0</td><td data-l="content">drainage designations</td><td data-l="status">LIVE <code>nat_drain</code></td><td data-l="use / reasoning">same</td></tr>
+<tr><td data-l="service">ILUC_Water_Supplies/0</td><td data-l="content">PWS areas before the Inter-Departmental Land Use Committee for protected status (11)</td><td data-l="status">LIVE <code>iluc_pws</code></td><td data-l="use / reasoning">early warning: proposed protections not yet in the designated layers; ground clear today may be protected before a permit issues</td></tr>
 <tr><td data-l="service">Flood_Risk_Extents/0</td><td data-l="content">mapped flood extents</td><td data-l="status">RETIRED from live use</td><td data-l="use / reasoning">spatial queries take 18–30 s server-side (huge floodplain polygons), longer than the retry budget; replaced by a bundled envelope snapshot (§4)</td></tr>
 </tbody></table>
 <h3>Wetland / land cover</h3>
@@ -130,7 +131,7 @@ table.stack td::before{content:attr(data-l) ": ";font-weight:700;text-transform:
 </tbody></table>
 <h3>Notable AGOL omissions and candidates</h3>
 <table class="stack"><thead><tr><th>Service</th><th>Content</th><th>Status</th><th>Reasoning</th></tr></thead><tbody>
-<tr><td data-l="service">ILUC_InScopeAreas, ILUC_Water_Supplies</td><td data-l="content">interim land use control areas (apparent)</td><td data-l="status">CANDIDATE</td><td data-l="reasoning">name suggests interim land-use restrictions that could bind a site; semantics unverified — inspect before wiring</td></tr>
+<tr><td data-l="service">ILUC_InScopeAreas</td><td data-l="content">wind energy call-for-bids areas (nominated/successful bidder/reserve)</td><td data-l="status">OMITTED</td><td data-l="reasoning">inspected: demonstration-grade wind-bid data by the province's own description; the wind reserve is already screened from the authoritative dnrmaps layer</td></tr>
 <tr><td data-l="service">Proposed_ERWPP</td><td data-l="content">proposed reserve/protected area (apparent)</td><td data-l="status">CANDIDATE</td><td data-l="reasoning">a *proposed* protected area is exactly the kind of conflict worth flagging early; semantics unverified</td></tr>
 <tr><td data-l="service">LandslideSites</td><td data-l="content">mapped landslide sites</td><td data-l="status">CANDIDATE</td><td data-l="reasoning">site-hazard advisory value, not a referral; low priority</td></tr>
 <tr><td data-l="service">WLD_BigGameManagementArea</td><td data-l="content">game management zones</td><td data-l="status">OMITTED</td><td data-l="reasoning">hunting administration; no permit bearing</td></tr>
